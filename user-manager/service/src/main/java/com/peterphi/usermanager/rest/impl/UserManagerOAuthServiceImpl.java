@@ -160,7 +160,7 @@ public class UserManagerOAuthServiceImpl implements UserManagerOAuthService
 			call.set("scope", scope);
 			call.set("state", state);
 
-			return call.process(Response.ok().type(MediaType.APPLICATION_XML).cacheControl(CacheControl.valueOf(NO_CACHE)));
+			return call.process(Response.ok().type(MediaType.TEXT_HTML).cacheControl(CacheControl.valueOf(NO_CACHE)));
 		}
 	}
 
