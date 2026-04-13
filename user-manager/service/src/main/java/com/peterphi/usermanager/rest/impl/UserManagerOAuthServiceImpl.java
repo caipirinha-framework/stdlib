@@ -33,6 +33,7 @@ import com.peterphi.usermanager.rest.iface.oauth2server.UserManagerOAuthService;
 import com.peterphi.usermanager.rest.iface.oauth2server.types.OAuth2TokenResponse;
 import com.peterphi.usermanager.rest.marshaller.UserMarshaller;
 import com.peterphi.usermanager.rest.type.UserManagerUser;
+import com.peterphi.usermanager.service.LoginRateLimiter;
 import com.peterphi.usermanager.util.UserManagerBearerToken;
 import org.apache.commons.lang.StringUtils;
 import org.jboss.resteasy.util.BasicAuthHelper;
@@ -109,6 +110,9 @@ public class UserManagerOAuthServiceImpl implements UserManagerOAuthService
 
 	@Inject
 	UserMarshaller marshaller;
+
+	@Inject
+	LoginRateLimiter loginRateLimiter;
 
 
 	@Override
@@ -455,10 +459,18 @@ public class UserManagerOAuthServiceImpl implements UserManagerOAuthService
 			{
 				// N.B. Don't expect the clientSecret from this call
 
+				// Enforce per-account failed-login rate limit (defaults to 5 failures per 60s window)
+				loginRateLimiter.checkAllowed(username);
+
 				final UserEntity user = userDao.login(username, password);
 
 				if (user == null)
+				{
+					loginRateLimiter.recordFailure(username);
 					throw new IllegalArgumentException("Incorrect username/password combination");
+				}
+
+				loginRateLimiter.recordSuccess(username);
 
 				// Accept the use of the service and create a new session
 				session = createSession(user.getId(), clientId, redirectUri, "password-to-token", true);

@@ -15,6 +15,8 @@ import com.peterphi.usermanager.guice.UMConfig;
 import com.peterphi.usermanager.guice.authentication.UserAuthenticationService;
 import com.peterphi.usermanager.guice.authentication.UserLogin;
 import com.peterphi.usermanager.guice.token.CSRFTokenStore;
+import com.peterphi.usermanager.service.LoginRateLimitedException;
+import com.peterphi.usermanager.service.LoginRateLimiter;
 import com.peterphi.usermanager.service.PasswordResetService;
 import com.peterphi.usermanager.service.RedirectValidatorService;
 import com.peterphi.usermanager.ui.api.LoginUIService;
@@ -70,6 +72,9 @@ public class LoginUIServiceImpl implements LoginUIService
 	@Inject
 	RedirectValidatorService redirectValidator;
 
+	@Inject
+	LoginRateLimiter loginRateLimiter;
+
 
 	@Override
 	@AuthConstraint(skip = true, comment = "login page")
@@ -121,11 +126,25 @@ public class LoginUIServiceImpl implements LoginUIService
 						"An unexpected browser security error occurred. Please try closing your browser window and enter the system again.");
 			}
 
+			// Enforce per-account failed-login rate limit (defaults to 5 failures per 60s window)
+			try
+			{
+				loginRateLimiter.checkAllowed(user);
+			}
+			catch (LoginRateLimitedException e)
+			{
+				final String page = getLogin(returnTo, e.getMessage());
+
+				return Response.status(429).entity(page).build();
+			}
+
 			final UserEntity account = authenticationService.authenticate(user, password, false);
 
 			if (account != null)
 			{
-				// Successful login
+				// Successful login - clear any recorded failures for this account
+				loginRateLimiter.recordSuccess(user);
+
 				login.reload(account);
 
 				final Response.ResponseBuilder builder;
@@ -154,6 +173,9 @@ public class LoginUIServiceImpl implements LoginUIService
 			}
 			else
 			{
+				// Record the failure against the per-account rate limiter
+				loginRateLimiter.recordFailure(user);
+
 				// Send the user back to the login page
 				final String page = getLogin(returnTo, "E-mail/password incorrect");
 
