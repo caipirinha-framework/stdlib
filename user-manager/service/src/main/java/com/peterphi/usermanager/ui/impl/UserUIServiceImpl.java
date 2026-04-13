@@ -273,6 +273,8 @@ public class UserUIServiceImpl implements UserUIService
 	@AuthConstraint(role = UserLogin.ROLE_ADMIN)
 	public Response startPasswordResetFlow(final int userId, final String token)
 	{
+		tokenStore.validate(TOKEN_USE, token);
+
 		final String resetCode = passwordResetService.start(userId);
 
 		TemplateCall call = templater.template("reset_password_flow_started");
