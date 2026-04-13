@@ -41,6 +41,12 @@ public class RedirectValidatorService
 		if (StringUtils.isEmpty(url))
 			return "/";
 
+		// Reject any URL that isn't plainly http(s) or a server-relative path. This stops dangerous schemes
+		// (javascript:, data:, vbscript:, ...) being carried through to the /redirect-warning template where
+		// a user click would otherwise execute them in-origin.
+		if (!isHttpOrRelative(url))
+			return "/";
+
 		URI uri = URI.create(url);
 
 		if (StringUtils.startsWithIgnoreCase(uri.getPath(), "/user-manager"))
@@ -54,10 +60,34 @@ public class RedirectValidatorService
 	}
 
 
+	/**
+	 * Returns true if the URL is either a server-relative path (and not protocol-relative), or uses the http/https
+	 * scheme. Any other scheme (javascript:, data:, file:, vbscript:, ...) is rejected.
+	 */
+	private static boolean isHttpOrRelative(final String url)
+	{
+		if (StringUtils.isBlank(url))
+			return true;
+
+		// Server-relative path (but not "//..." which is protocol-relative)
+		if (url.startsWith("/") && !url.startsWith("//"))
+			return true;
+
+		// Explicit http / https only
+		if (StringUtils.startsWithIgnoreCase(url, "http://") || StringUtils.startsWithIgnoreCase(url, "https://"))
+			return true;
+
+		return false;
+	}
+
+
 	boolean isSafe(final String url)
 	{
 		if (StringUtils.isBlank(url))
 			return true;
+
+		if (!isHttpOrRelative(url))
+			return false;
 
 		if (allowAllRelativeRedirects && (url.startsWith("/") && !url.startsWith("//") || url.startsWith("..")))
 			return true;
