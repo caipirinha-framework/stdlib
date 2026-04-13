@@ -27,7 +27,7 @@ public class ImpersonationService
 	public boolean enabled = true;
 
 	@AuthConstraint(id = "impersonation", role = UserLogin.ROLE_ADMIN, comment = "only admins can impersonate other users")
-	public String impersonate(final int userId)
+	public void impersonate(final int userId)
 	{
 		if (!enabled)
 			throw new IllegalArgumentException(
@@ -43,7 +43,5 @@ public class ImpersonationService
 		         newUser.getEmail());
 
 		currentUser.reload(newUser);
-
-		return newUser.getSessionReconnectKey();
 	}
 }
