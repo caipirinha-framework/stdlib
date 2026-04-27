@@ -5,14 +5,14 @@
 	<groupId>com.peterphi.std</groupId>
 	<artifactId>stdlib</artifactId>
 	<packaging>jar</packaging>
-	<version>14.7.16</version>
+	<version>14.7.17-SNAPSHOT</version>
 	<name>stdlib</name>
 	<description>Utility API</description>
 
 	<parent>
 		<groupId>com.peterphi.std</groupId>
 		<artifactId>stdlib-parent</artifactId>
-		<version>14.7.16</version>
+		<version>14.7.17-SNAPSHOT</version>
 	</parent>
 
 	<dependencies>
