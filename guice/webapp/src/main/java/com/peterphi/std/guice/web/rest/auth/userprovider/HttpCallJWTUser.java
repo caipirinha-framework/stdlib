@@ -255,7 +255,7 @@ class HttpCallJWTUser implements CurrentUser
 	@Override
 	public boolean isAnonymous()
 	{
-		return (get() != null);
+		return (get() == null);
 	}
 
 
