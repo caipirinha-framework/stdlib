@@ -2,6 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <!--/*@thymesVar id="breakerService" type="com.peterphi.std.guice.common.breaker.BreakerService"*/-->
 <!--/*@thymesVar id="coreRestPrefix" type="java.lang.String"*/-->
+<!--/*@thymesVar id="csrfToken" type="java.lang.String"*/-->
 <!--/*@thymesVar id="message" type="java.lang.String"*/-->
 <head>
 	<title>Breakers</title>
@@ -51,6 +52,7 @@
 						<td>
 							<form method="POST"
 							      th:action="@{|${coreRestPrefix}/guice/breakers/set-breaker-state|}">
+								<input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
 								<input type="hidden" name="name" th:value="${breakerName}"/>
 								<input type="hidden" name="value" th:value="${!record.newValue}" />
 								<input type="hidden" name="note" value="Changed via web interface" />

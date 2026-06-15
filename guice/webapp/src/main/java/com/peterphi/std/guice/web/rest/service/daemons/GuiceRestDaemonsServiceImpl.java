@@ -9,6 +9,7 @@ import com.peterphi.std.guice.common.auth.annotations.AuthConstraint;
 import com.peterphi.std.guice.common.daemon.GuiceDaemon;
 import com.peterphi.std.guice.common.daemon.GuiceDaemonRegistry;
 import com.peterphi.std.guice.common.daemon.GuiceRecurringDaemon;
+import com.peterphi.std.guice.web.rest.scoping.SessionScoped;
 import com.peterphi.std.guice.web.rest.templating.TemplateCall;
 import com.peterphi.std.guice.web.rest.templating.thymeleaf.GuiceCoreTemplater;
 import org.apache.commons.lang.StringUtils;
@@ -18,8 +19,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 
+@SessionScoped
 @AuthConstraint(id = "framework-admin", role = "framework-admin")
 public class GuiceRestDaemonsServiceImpl implements GuiceRestDaemonsService
 {
@@ -39,6 +42,15 @@ public class GuiceRestDaemonsServiceImpl implements GuiceRestDaemonsService
 	@Named(GuiceProperties.LOCAL_REST_SERVICES_ENDPOINT)
 	URI restEndpoint;
 
+	private final String csrfToken = UUID.randomUUID().toString();
+
+
+	private void checkCsrfToken(final String provided)
+	{
+		if (!StringUtils.equals(provided, csrfToken))
+			throw new IllegalArgumentException("CSRF token not provided or invalid, refusing request");
+	}
+
 
 	@Override
 	public String getIndex(String message)
@@ -47,6 +59,7 @@ public class GuiceRestDaemonsServiceImpl implements GuiceRestDaemonsService
 
 		template.set("message", message);
 		template.set("registry", registry);
+		template.set("csrfToken", csrfToken);
 		template.set("daemonDescriber", (Function<GuiceDaemon, String>) this :: getDescription);
 
 		return template.process();
@@ -54,8 +67,10 @@ public class GuiceRestDaemonsServiceImpl implements GuiceRestDaemonsService
 
 
 	@Override
-	public Response trigger(final String name, final boolean verbose)
+	public Response trigger(final String providedCsrfToken, final String name, final boolean verbose)
 	{
+		checkCsrfToken(providedCsrfToken);
+
 		final Optional<GuiceRecurringDaemon> result = registry.getRecurring()
 		                                                      .stream()
 		                                                      .filter(d -> StringUtils.equals(name,
@@ -126,8 +141,10 @@ public class GuiceRestDaemonsServiceImpl implements GuiceRestDaemonsService
 
 
 	@Override
-	public Response interrupt(final String name)
+	public Response interrupt(final String providedCsrfToken, final String name)
 	{
+		checkCsrfToken(providedCsrfToken);
+
 		final Optional<GuiceDaemon> result = registry
 				                                     .getAll()
 				                                     .stream()

@@ -28,7 +28,9 @@ public interface GuiceRestDaemonsService
 	@Path("/trigger")
 	@Produces("text/html")
 	@Doc("Trigger a recurring daemon to run immediately")
-	Response trigger(@FormParam("name") final String name, @FormParam("verbose") @DefaultValue("false") final boolean verbose);
+	Response trigger(@FormParam("csrf_token") String providedCsrfToken,
+	                 @FormParam("name") final String name,
+	                 @FormParam("verbose") @DefaultValue("false") final boolean verbose);
 
 	@GET
 	@Path("/stacktrace")
@@ -40,5 +42,5 @@ public interface GuiceRestDaemonsService
 	@Path("/interrupt")
 	@Produces("text/html")
 	@Doc("Attempt to interrupt the daemon")
-	Response interrupt(@FormParam("name") final String name);
+	Response interrupt(@FormParam("csrf_token") String providedCsrfToken, @FormParam("name") final String name);
 }

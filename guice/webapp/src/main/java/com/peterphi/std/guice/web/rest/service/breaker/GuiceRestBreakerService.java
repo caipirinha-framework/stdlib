@@ -32,7 +32,8 @@ public interface GuiceRestBreakerService
 	@Path("/set-breaker-state")
 	@Produces("text/html")
 	@Doc("Trip or reset a breaker")
-	Response setState(@FormParam("name") final String name,
+	Response setState(@FormParam("csrf_token") String providedCsrfToken,
+	                  @FormParam("name") final String name,
 	                  @FormParam("value") @DefaultValue("false") final boolean value,
 	                  @FormParam("note") String note);
 
@@ -52,6 +53,9 @@ public interface GuiceRestBreakerService
 	@Path("/set-breaker-state")
 	@Produces("text/plain")
 	@Doc("Trip or reset a breaker")
+	// N.B. this is the machine-facing (text/plain) variant. It is not reachable by browser-form CSRF (a form cannot
+	// negotiate Accept: text/plain, so a forged POST routes to the text/html setState, which is CSRF-protected), so it is
+	// deliberately not CSRF-token protected — that would break programmatic callers. It remains framework-admin gated.
 	String setTripped(@FormParam("name") final String name,
 	                  @FormParam("value") @DefaultValue("false") final boolean value,
 	                  @FormParam("note") String note);

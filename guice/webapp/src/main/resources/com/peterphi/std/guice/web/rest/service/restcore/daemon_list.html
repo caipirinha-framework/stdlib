@@ -2,6 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <!--/*@thymesVar id="registry" type="com.peterphi.std.guice.common.daemon.GuiceDaemonRegistry"*/-->
 <!--/*@thymesVar id="coreRestPrefix" type="java.lang.String"*/-->
+<!--/*@thymesVar id="csrfToken" type="java.lang.String"*/-->
 <!--/*@thymesVar id="message" type="java.lang.String"*/-->
 <head>
 	<title>Daemons</title>
@@ -90,18 +91,21 @@
 						<td>
 							<form method="POST"
 							      th:action="@{|${coreRestPrefix}/guice/threads/trigger|}">
+								<input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
 								<input type="hidden" name="name" th:value="${daemon.name}"/>
 								<input type="hidden" name="verbose" value="false" />
 								<input type="submit" value="Run Now"/>
 							</form>
 							<form method="POST"
 							      th:action="@{|${coreRestPrefix}/guice/threads/trigger|}">
+								<input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
 								<input type="hidden" name="name" th:value="${daemon.name}"/>
 								<input type="hidden" name="verbose" value="true" />
 								<input type="submit" value="Run (Traced)"/>
 							</form>
 							<form th:if="${daemon.threadRunning}" method="POST"
 							      th:action="@{|${coreRestPrefix}/guice/threads/interrupt|}">
+								<input type="hidden" name="csrf_token" th:value="${csrfToken}"/>
 								<input type="hidden" name="name" th:value="${daemon.name}"/>
 								<input type="submit" value="Interrupt"/>
 							</form>
