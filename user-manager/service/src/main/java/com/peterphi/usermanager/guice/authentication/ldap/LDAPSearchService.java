@@ -149,7 +149,7 @@ public class LDAPSearchService
 			search.setSearchScope(SearchControls.SUBTREE_SCOPE);
 			search.setReturningAttributes(new String[]{"dn"});
 
-			final String searchFilter = String.format(this.ldapGroupFilter, dn);
+			final String searchFilter = String.format(this.ldapGroupFilter, escapeLdapSearchFilterValue(dn));
 
 			answer = executeLdapSearch(ldap, search, searchFilter);
 		}
@@ -250,7 +250,7 @@ public class LDAPSearchService
 						search.setSearchScope(SearchControls.SUBTREE_SCOPE);
 						search.setReturningAttributes(new String[]{"dn", "name", "samAccountName"});
 
-						final String searchFilter = String.format(this.ldapFilter, searchFor.username);
+						final String searchFilter = String.format(this.ldapFilter, escapeLdapSearchFilterValue(searchFor.username));
 
 						answer = executeLdapSearch(ldapContext, search, searchFilter);
 					}
@@ -353,5 +353,53 @@ public class LDAPSearchService
 			return replacement;
 		else
 			return input;
+	}
+
+
+	/**
+	 * Escape a value that is to be substituted into an LDAP search filter, per RFC 4515 section 3. This prevents LDAP filter
+	 * injection by ensuring that filter metacharacters present in the value are treated as literal characters rather than as
+	 * filter syntax.
+	 *
+	 * @param value
+	 * 		the raw (untrusted) value to be placed into a filter assertion value
+	 *
+	 * @return the escaped value (a normal value with no metacharacters is returned unchanged)
+	 */
+	static String escapeLdapSearchFilterValue(final String value)
+	{
+		if (value == null)
+			return null;
+
+		final StringBuilder sb = new StringBuilder(value.length());
+
+		for (int i = 0; i < value.length(); i++)
+		{
+			final char c = value.charAt(i);
+
+			switch (c)
+			{
+				case '\\':
+					sb.append("\\5c");
+					break;
+				case '*':
+					sb.append("\\2a");
+					break;
+				case '(':
+					sb.append("\\28");
+					break;
+				case ')':
+					sb.append("\\29");
+					break;
+				case '\0':
+					sb.append("\\00");
+					break;
+				default:
+					sb.append(c);
+					break;
+			}
+		}
+
+		return sb.toString();
 	}
 }
