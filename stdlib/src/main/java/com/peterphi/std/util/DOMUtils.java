@@ -50,16 +50,28 @@ public class DOMUtils
 		{
 			factory.setNamespaceAware(true);
 
-			// Disable DTDs
-			factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
-
-
-			factory.setXIncludeAware(false);
-			factory.setExpandEntityReferences(false);
+			XMLSecurity.harden(factory);
 		}
 		catch (ParserConfigurationException e)
 		{
 			throw new RuntimeException("Could not configure XML DocumentBuilderFactory!");
+		}
+
+		return factory;
+	}
+
+
+	private static TransformerFactory createTransformerFactory()
+	{
+		TransformerFactory factory = TransformerFactory.newInstance();
+
+		try
+		{
+			XMLSecurity.harden(factory);
+		}
+		catch (TransformerConfigurationException e)
+		{
+			throw new RuntimeException("Could not configure XML TransformerFactory!", e);
 		}
 
 		return factory;
@@ -191,7 +203,7 @@ public class DOMUtils
 
 		try
 		{
-			Transformer transform = TransformerFactory.newInstance().newTransformer();
+			Transformer transform = createTransformerFactory().newTransformer();
 			transform.transform(new DOMSource(n), result);
 		}
 		catch (TransformerConfigurationException e)
@@ -323,7 +335,7 @@ public class DOMUtils
 		try
 		{
 			// Configure transformer
-			Transformer transformer = TransformerFactory.newInstance().newTransformer();
+			Transformer transformer = createTransformerFactory().newTransformer();
 
 			transformer.setOutputProperty(OutputKeys.ENCODING, "utf-8");
 			transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");

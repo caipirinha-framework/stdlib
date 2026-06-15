@@ -1,6 +1,7 @@
 package com.peterphi.std.util.jaxb;
 
 import com.peterphi.std.util.DOMUtils;
+import com.peterphi.std.util.XMLSecurity;
 import com.peterphi.std.util.jaxb.exception.JAXBRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,6 +9,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -15,9 +18,12 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.PropertyException;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
 import javax.xml.transform.Source;
+import javax.xml.transform.sax.SAXSource;
 import javax.xml.validation.Schema;
 import java.io.File;
 import java.io.InputStream;
@@ -37,7 +43,16 @@ public class JAXBSerialiser
 {
 	private static final Logger log = LoggerFactory.getLogger(JAXBSerialiser.class);
 
+	private static SAXParserFactory SAX_PARSER_FACTORY;
+
 	private final JAXBContext context;
+
+	/**
+	 * True if the underlying JAXB provider hardens its own internally-created XML parser against XXE (so we should let it own
+	 * the parse rather than supplying our own hardened parser via a {@link SAXSource}).
+	 */
+	private final boolean isMOXY;
+
 	private Schema schema;
 	private boolean prettyOutput = false;
 
@@ -62,6 +77,8 @@ public class JAXBSerialiser
 		{
 			throw new JAXBRuntimeException("Error creating JAXB Context: " + e.getMessage(), e);
 		}
+
+		this.isMOXY = isMOXY(this.context);
 	}
 
 
@@ -73,6 +90,7 @@ public class JAXBSerialiser
 	private JAXBSerialiser(JAXBContext context)
 	{
 		this.context = context;
+		this.isMOXY = isMOXY(context);
 	}
 
 
@@ -91,6 +109,8 @@ public class JAXBSerialiser
 		{
 			throw new JAXBRuntimeException("Error creating JAXB Context: " + e.getMessage(), e);
 		}
+
+		this.isMOXY = isMOXY(this.context);
 	}
 
 
@@ -282,6 +302,56 @@ public class JAXBSerialiser
 		}
 	}
 
+
+	/**
+	 * Tests if this provider is eclipselink moxy.
+	 * @param context the JAXB context (may be null, defaults to system in this instance)
+	 *
+	 * @return true if the provider is from eclipselink
+	 */
+	private static boolean isMOXY(final JAXBContext context)
+	{
+		return context != null && context.getClass().getName().startsWith("org.eclipse.persistence.");
+	}
+
+
+	private static SAXParserFactory getHardenedSAXParserFactory()
+	{
+		if (SAX_PARSER_FACTORY == null)
+		{
+			try
+			{
+				final SAXParserFactory spf = SAXParserFactory.newInstance();
+
+				XMLSecurity.harden(spf);
+				spf.setNamespaceAware(true);
+
+				SAX_PARSER_FACTORY = spf;
+			}
+			catch (ParserConfigurationException | SAXException e)
+			{
+				throw new JAXBRuntimeException("Unable to set up SAXParserFactory to securely decode XML inputs!", e);
+			}
+		}
+
+		return SAX_PARSER_FACTORY;
+	}
+
+
+	private static SAXSource toHardenedSource(final InputSource inputSource)
+	{
+		try
+		{
+			final XMLReader reader = getHardenedSAXParserFactory().newSAXParser().getXMLReader();
+
+			return new SAXSource(reader, inputSource);
+		}
+		catch (ParserConfigurationException | SAXException e)
+		{
+			throw new JAXBRuntimeException("Error setting up secure XML source for deserialisation", e);
+		}
+	}
+
 	//
 	//
 	// Deserialisers
@@ -428,7 +498,17 @@ public class JAXBSerialiser
 
 		try
 		{
-			final Object obj = unmarshaller.unmarshal(file);
+			final Object obj;
+			if (isMOXY)
+			{
+				obj = unmarshaller.unmarshal(file);
+			}
+			else
+			{
+				final InputSource inputSource = new InputSource(file.toURI().toASCIIString());
+
+				obj = unmarshaller.unmarshal(toHardenedSource(inputSource));
+			}
 
 			if (obj == null)
 				throw new RuntimeException("Malformed XML from " + file);
@@ -451,7 +531,9 @@ public class JAXBSerialiser
 
 		try
 		{
-			final Object obj = unmarshaller.unmarshal(source);
+			// MOXy disables DTDs and external entities by default when it owns the parse, so wrapping its input in a parser we build ourselves is unnecessary (MOXy also applies stricter type coercion on a {@link SAXSource} with an external reader)
+			// A StreamSource carries raw, unparsed XML; other Source types are already parsed or carry their own reader.
+			final Object obj = isMOXY ? unmarshaller.unmarshal(source) : unmarshaller.unmarshal(toHardenedSource(source));
 
 			if (obj == null)
 				throw new RuntimeException("Malformed XML! JAXB returned null");
@@ -474,7 +556,24 @@ public class JAXBSerialiser
 
 		try
 		{
-			final Object obj = unmarshaller.unmarshal(source);
+			// MOXy disables DTDs and external entities by default when it owns the parse, so wrapping its input in a parser we build ourselves is unnecessary (MOXy also applies stricter type coercion on a {@link SAXSource} with an external reader)
+			// A StreamSource carries raw, unparsed XML; other Source types are already parsed or carry their own reader.
+			final Source effectiveSource;
+			if (!isMOXY && source instanceof javax.xml.transform.stream.StreamSource stream)
+			{
+				final InputSource inputSource = new InputSource();
+				inputSource.setSystemId(stream.getSystemId());
+				inputSource.setByteStream(stream.getInputStream());
+				inputSource.setCharacterStream(stream.getReader());
+
+				effectiveSource = toHardenedSource(inputSource);
+			}
+			else
+			{
+				effectiveSource = source;
+			}
+
+			final Object obj = unmarshaller.unmarshal(effectiveSource);
 
 			if (obj == null)
 				throw new RuntimeException("Malformed XML! JAXB returned null");

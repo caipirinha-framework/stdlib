@@ -117,6 +117,18 @@ public class JDOMUtils
 	// Parse
 	//
 
+	private static SAXBuilder createHardenedSAXBuilder()
+	{
+		SAXBuilder builder = new SAXBuilder();
+
+		builder.setFeature(XMLSecurity.DISALLOW_DOCTYPE_DECL, true);
+		builder.setFeature(XMLSecurity.EXTERNAL_GENERAL_ENTITIES, false);
+		builder.setFeature(XMLSecurity.EXTERNAL_PARAMETER_ENTITIES, false);
+		builder.setExpandEntities(false);
+
+		return builder;
+	}
+
 	public static Document parse(String xml)
 	{
 		return parse(new StringReader(xml));
@@ -151,7 +163,7 @@ public class JDOMUtils
 	{
 		try
 		{
-			return new SAXBuilder().build(is);
+			return createHardenedSAXBuilder().build(is);
 		}
 		catch (IOException e)
 		{
@@ -167,7 +179,7 @@ public class JDOMUtils
 	{
 		try
 		{
-			return new SAXBuilder().build(reader);
+			return createHardenedSAXBuilder().build(reader);
 		}
 		catch (IOException e)
 		{
