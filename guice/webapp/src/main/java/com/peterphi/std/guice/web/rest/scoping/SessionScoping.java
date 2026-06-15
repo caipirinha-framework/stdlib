@@ -130,7 +130,8 @@ public final class SessionScoping implements Scope
 		{
 			final Object obj = session.getAttribute(name);
 
-			return (obj == null || obj == NullObject.INSTANCE);
+			// The attribute exists only if a real value is present (a NullObject.INSTANCE sentinel is treated as absent).
+			return (obj != null && obj != NullObject.INSTANCE);
 		}
 	}
 

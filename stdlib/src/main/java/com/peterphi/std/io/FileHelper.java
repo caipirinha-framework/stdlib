@@ -52,7 +52,7 @@ public class FileHelper
 	{
 		try
 		{
-			File tempFile = File.createTempFile(prefix, suffix);
+			final File tempFile = File.createTempFile(prefix, suffix);
 			if (tempFile.exists())
 			{
 				if (!tempFile.delete())
