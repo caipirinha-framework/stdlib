@@ -1,5 +1,6 @@
 package com.peterphi.std.util;
 
+import java.security.SecureRandom;
 import java.util.Random;
 import java.util.StringTokenizer;
 
@@ -12,7 +13,10 @@ public class HexHelper
 	{
 	}
 
+
 	private static final char[] hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
 	/**
 	 * Decodes a hexidecimal string into a series of bytes
@@ -86,7 +90,7 @@ public class HexHelper
 
 	/**
 	 * Generates a number of random bytes which can then be manipulated and/or converted to hex<br />
-	 * Uses a new instance of java.util.Random
+	 * Uses a shared cryptographically strong random number generator (java.security.SecureRandom)
 	 *
 	 * @param bytes
 	 *
@@ -94,7 +98,7 @@ public class HexHelper
 	 */
 	public static final byte[] generateBytes(final int bytes)
 	{
-		return generateBytes(new Random(), bytes);
+		return generateBytes(SECURE_RANDOM, bytes);
 	}
 
 	/**
@@ -126,7 +130,7 @@ public class HexHelper
 	 */
 	public static final String generateHex(final int characters)
 	{
-		return generateHex(new Random(), characters);
+		return generateHex(SECURE_RANDOM, characters);
 	}
 
 	/**

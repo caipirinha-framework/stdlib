@@ -1,5 +1,6 @@
 package com.peterphi.std.types;
 
+import java.security.SecureRandom;
 import java.util.Random;
 
 /**
@@ -12,13 +13,15 @@ public final class SimpleId
 	// 0-9a-z excluding vowels
 	private final static String digits = "0123456789bcdfghjklmnpqrstvwxyz";
 
+	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
 
 	private SimpleId()
 	{
 	}
 	/**
-	 * Generates a random sequence of alphanumeric characters of length <code>length</code> using a new pseudorandom number
-	 * generator (<code>new Random()</code>)
+	 * Generates a random sequence of alphanumeric characters of length <code>length</code> using a shared cryptographically
+	 * strong random number generator (<code>SecureRandom</code>)
 	 *
 	 * @param length
 	 * 		the length of the string to generate (must be > 0)
@@ -27,16 +30,14 @@ public final class SimpleId
 	 */
 	public static String alphanumeric(int length)
 	{
-		final Random random = new Random();
-
-		return alphanumeric(random, length);
+		return alphanumeric(SECURE_RANDOM, length);
 	}
 
 
 	/**
 	 * Generates a random sequence of alphanumeric characters, prefixed by <code>prefix</code> such that the total string is of
-	 * length <code>totalLength</code> using a new pseudorandom number
-	 * generator (<code>new Random()</code>)
+	 * length <code>totalLength</code> using a shared cryptographically strong random number
+	 * generator (<code>SecureRandom</code>)
 	 *
 	 * @param totalLength
 	 * 		the length of the string to return (must be > the prefix length)
