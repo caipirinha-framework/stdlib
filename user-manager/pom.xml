@@ -11,7 +11,7 @@
 	<parent>
 		<groupId>com.peterphi.std</groupId>
 		<artifactId>stdlib-parent</artifactId>
-		<version>14.8.0</version>
+		<version>14.8.1-SNAPSHOT</version>
 	</parent>
 
 	<modules>
