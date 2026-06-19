@@ -9,13 +9,13 @@
 
 	<name>application framework parent</name>
 	<description>Application Framework Parent Package</description>
-	<url>https://github.com/petergeneric/stdlib/wiki</url>
+	<url>https://github.com/caipirinha-framework/stdlib/wiki</url>
 
 
 	<licenses>
 		<license>
 			<name>MIT</name>
-			<url>https://github.com/petergeneric/stdlib/blob/master/LICENSE</url>
+			<url>https://github.com/caipirinha-framework/stdlib/blob/master/LICENSE</url>
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
@@ -47,9 +47,9 @@
 	</properties>
 
 	<scm>
-		<connection>scm:git:git@github.com:petergeneric/stdlib.git</connection>
-		<developerConnection>scm:git:git@github.com:petergeneric/stdlib.git</developerConnection>
-		<url>scm:git:git@github.com:petergeneric/stdlib.git</url>
+		<connection>scm:git:git@github.com:caipirinha-framework/stdlib.git</connection>
+		<developerConnection>scm:git:git@github.com:caipirinha-framework/stdlib.git</developerConnection>
+		<url>scm:git:git@github.com:caipirinha-framework/stdlib.git</url>
 		<tag>HEAD</tag>
 	</scm>
 

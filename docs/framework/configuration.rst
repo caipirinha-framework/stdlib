@@ -1,7 +1,7 @@
 Framework Configuration
 =======================
 
-This documentation is written with the assumption that you'll be deploying webapps to a multi-domain tomcat system, see https://github.com/petergeneric/tomcat-control-script/wiki for more detail
+This documentation is written with the assumption that you'll be deploying webapps to a multi-domain tomcat system, see https://github.com/caipirinha-framework/tomcat-control-script/wiki for more detail
 
 Configuration File Layout
 -------------------------
