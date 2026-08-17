@@ -28,14 +28,11 @@ public class JAXBResourceFactory
 	/**
 	 * Resolve the JAXB resource, permitting caching behind the scenes
 	 *
-	 * @param clazz
-	 * 		the jaxb resource to read
-	 * @param name
-	 * 		the name of the property
+	 * @param clazz the jaxb resource to read
+	 * @param name  the name of the property
 	 * @param <T>
-	 * @throws RuntimeException if a value cannot be retrieved
-	 *
 	 * @return
+	 * @throws RuntimeException if a value cannot be retrieved
 	 */
 	public synchronized <T> T get(Class<T> clazz, final String name)
 	{
@@ -54,14 +51,10 @@ public class JAXBResourceFactory
 	/**
 	 * Resolve the JAXB resource, permitting caching behind the scenes
 	 *
-	 * @param clazz
-	 * 		the jaxb resource to read
-	 * @param name
-	 * 		the name of the property
-	 * @param defaultValue
-	 * 		the default value to return if the property is missing
+	 * @param clazz        the jaxb resource to read
+	 * @param name         the name of the property
+	 * @param defaultValue the default value to return if the property is missing
 	 * @param <T>
-	 *
 	 * @return
 	 */
 	public synchronized <T> T get(Class<T> clazz, final String name, T defaultValue)
@@ -89,6 +82,21 @@ public class JAXBResourceFactory
 	public <T> T getOnce(final Class<T> clazz, final String name)
 	{
 		return makeFactory(clazz, name).get();
+	}
+
+
+	/**
+	 * Create a new factory whose cache state is owned by the caller.<br />
+	 * Unlike {@link #getOnce(Class, String)}, unchanged config will keep resolving to the same object
+	 *
+	 * @param clazz the jaxb resource to read
+	 * @param name  the name of the property
+	 * @param <T>
+	 * @return
+	 */
+	<T> JAXBNamedResourceFactory<T> createDedicatedFactory(final Class<T> clazz, final String name)
+	{
+		return makeFactory(clazz, name);
 	}
 
 

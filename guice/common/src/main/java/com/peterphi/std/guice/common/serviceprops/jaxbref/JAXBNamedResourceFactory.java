@@ -1,17 +1,21 @@
 package com.peterphi.std.guice.common.serviceprops.jaxbref;
 
+import com.peterphi.std.crypto.digest.DigestHelper;
 import com.peterphi.std.guice.common.lifecycle.GuiceLifecycleListener;
 import com.peterphi.std.guice.common.serviceprops.composite.GuiceConfig;
 import com.peterphi.std.util.jaxb.JAXBSerialiserFactory;
 import org.apache.commons.lang.StringUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.function.Supplier;
 
 /**
  * The actual factory that constructs JAXB objects from configuration. Not user-facing.
@@ -32,9 +36,9 @@ class JAXBNamedResourceFactory<T>
 	private final Class<T> clazz;
 
 	/**
-	 * Cache info for literal value
+	 * Checksum of the raw content behind the cached value; used to avoid re-deserialising unchanged content
 	 */
-	private SoftReference<String> inMemoryString = null;
+	private String lastChecksum = null;
 
 	// Cache info for File value
 	private File lastFile;
@@ -65,6 +69,17 @@ class JAXBNamedResourceFactory<T>
 	}
 
 
+	/**
+	 * Change the minimum period between attempts to reload a File/Resource backed value
+	 *
+	 * @param maxReloadRate the minimum number of milliseconds between reload attempts (use 0 to always attempt a reload)
+	 */
+	void setMaxReloadRate(final long maxReloadRate)
+	{
+		this.maxReloadRate = maxReloadRate;
+	}
+
+
 	public T get(T defaultValue)
 	{
 		String value = config.getRaw(name, null);
@@ -89,7 +104,7 @@ class JAXBNamedResourceFactory<T>
 			}
 
 			// Try to load from disk (N.B. if we have a cached value, respect max reload rate)
-			if (cached == null || System.currentTimeMillis() > lastLoaded + maxReloadRate)
+			if (cached == null || maxReloadRate <= 0 || System.currentTimeMillis() > lastLoaded + maxReloadRate)
 			{
 				// The value must be a File or Resource reference!
 				// Resolve the reference and check
@@ -124,7 +139,6 @@ class JAXBNamedResourceFactory<T>
 	 * Since properties will not store a BOM the
 	 *
 	 * @param str
-	 *
 	 * @return
 	 */
 	private boolean isLiteralXML(final String str)
@@ -138,7 +152,6 @@ class JAXBNamedResourceFactory<T>
 	 * (based on the last modified time on the file)
 	 *
 	 * @param str
-	 *
 	 * @return
 	 */
 	private T loadFileOrResourceValue(final String str)
@@ -218,33 +231,36 @@ class JAXBNamedResourceFactory<T>
 
 
 	/**
-	 * Load from a classpath resource; reloads every time
+	 * Load from a classpath resource.
+	 * <p><b>This loader is cache-aware and will only reload if the resource's contents change</b></p>
 	 *
 	 * @param resource
-	 *
 	 * @return
 	 */
 	private T loadResourceValue(final URL resource)
 	{
+		final byte[] content;
+
 		try (final InputStream is = resource.openStream())
 		{
-			cached = null; // Prevent the old value from being used
-
-			return setCached(clazz.cast(factory.getInstance(clazz).deserialise(is)));
+			content = is.readAllBytes();
 		}
 		catch (IOException e)
 		{
 			throw new RuntimeException("Error loading JAXB resource " + name + " " + clazz + " from " + resource, e);
 		}
+
+		return load(checksum(content),
+		            () -> clazz.cast(factory.getInstance(clazz).deserialise(new ByteArrayInputStream(content))));
 	}
 
 
 	/**
 	 * Load from a file.
-	 * <p><b>This loader is cache-aware and will only reload if the file's last modified timestamp changes</b></p>
+	 * <p><b>This loader is cache-aware: it will only re-read if the timestamp changes, and only re-deserialise if the contents
+	 * change</b></p>
 	 *
 	 * @param file
-	 *
 	 * @return
 	 */
 	private T loadFileValue(final File file)
@@ -270,9 +286,19 @@ class JAXBNamedResourceFactory<T>
 
 		if (reload)
 		{
-			cached = null; // Prevent the old value from being used
+			// N.B. the timestamp can change without the contents changing, so use a checksum to decide whether to re-deserialise
+			final byte[] content;
 
-			setCached(clazz.cast(factory.getInstance(clazz).deserialise(file)));
+			try
+			{
+				content = Files.readAllBytes(file.toPath());
+			}
+			catch (IOException e)
+			{
+				throw new RuntimeException("Error loading JAXB resource " + name + " " + clazz + " from " + file, e);
+			}
+
+			return load(checksum(content), () -> clazz.cast(factory.getInstance(clazz).deserialise(file)));
 		}
 
 		return cached;
@@ -284,29 +310,49 @@ class JAXBNamedResourceFactory<T>
 	 * <p><b>This loader is cache-aware and will only reload if the literal XML value changes</b></p>
 	 *
 	 * @param str
-	 *
 	 * @return
 	 */
 	private T loadLiteralValue(final String str)
 	{
 		// Literal in-memory value
-		final String cachedStr = (inMemoryString != null) ? inMemoryString.get() : null;
+		return load(checksum(str.getBytes(StandardCharsets.UTF_8)),
+		            () -> clazz.cast(factory.getInstance(clazz).deserialise(str)));
+	}
 
-		if (StringUtils.equals(str, cachedStr))
+
+	/**
+	 * Shared logic for all the loaders: only re-deserialise if the content's checksum has changed since the last successful
+	 * load.<br />
+	 * This lets callers use reference equality to detect a config change
+	 *
+	 * @param checksum
+	 * @param deserialiser
+	 * @return
+	 */
+	private T load(final String checksum, final Supplier<T> deserialiser)
+	{
+		if (cached != null && StringUtils.equals(checksum, lastChecksum))
 		{
 			// Cached value is still valid!
-		}
-		else
-		{
-			cached = null; // Prevent the old value from being used
+			lastLoaded = System.currentTimeMillis();
 
-			// Cached value is not valid anymore, re-parse
-			setCached(clazz.cast(factory.getInstance(clazz).deserialise(str)));
-
-			inMemoryString = new SoftReference<>(str);
+			return cached;
 		}
 
-		return cached;
+		cached = null; // Prevent the old value from being used
+		lastChecksum = null; // N.B. only set again once the content has been successfully deserialised
+
+		final T value = setCached(deserialiser.get());
+
+		lastChecksum = checksum;
+
+		return value;
+	}
+
+
+	private static String checksum(final byte[] content)
+	{
+		return DigestHelper.md5(content);
 	}
 
 

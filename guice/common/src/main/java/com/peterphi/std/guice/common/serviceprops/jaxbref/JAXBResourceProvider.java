@@ -22,6 +22,12 @@ public class JAXBResourceProvider<T> implements Provider<T>
 
 	private boolean hasRegisteredHealthCheck = false;
 
+	/**
+	 * N.B. retained (rather than using {@link JAXBResourceFactory#getOnce(Class, String)}) so its change-detection cache can
+	 * suppress re-deserialisation when the config content has not changed
+	 */
+	private JAXBNamedResourceFactory<T> namedFactory;
+
 
 	public JAXBResourceProvider(final Provider<JAXBResourceFactory> resourceFactoryProvider,
 	                            final Provider<HealthCheckRegistry> healthCheckRegistryProvider,
@@ -85,7 +91,13 @@ public class JAXBResourceProvider<T> implements Provider<T>
 
 	private synchronized T deserialise()
 	{
-		final JAXBResourceFactory provider = resourceFactoryProvider.get();
+		if (namedFactory == null)
+		{
+			namedFactory = resourceFactoryProvider.get().createDedicatedFactory(clazz, propertyName);
+
+			// Reloads are rate-limited by cacheValidity, so don't apply the factory's own rate limiting on top of that
+			namedFactory.setMaxReloadRate(0);
+		}
 
 		if (!hasRegisteredHealthCheck)
 		{
@@ -115,9 +127,10 @@ public class JAXBResourceProvider<T> implements Provider<T>
 			});
 		}
 
-		final T obj = provider.getOnce(clazz, propertyName);
+		final T obj = namedFactory.get();
 
-		if (onLoadMethod != null)
+		// N.B. only fire onLoad when the underlying config has actually (re)loaded, not on every cache refresh
+		if (onLoadMethod != null && obj != this.value)
 			onLoadMethod.accept(obj);
 
 		return obj;
