@@ -223,6 +223,44 @@ public class DigestHelper
 	}
 
 
+	/**
+	 * Compute the hexadecimal MD5 of a byte array
+	 *
+	 * @param plaintext
+	 *
+	 * @return
+	 */
+	public static String md5(final byte[] plaintext)
+	{
+		return digest(plaintext, MD5, ENCODE_HEX);
+	}
+
+
+	/**
+	 * Compute the digest of a byte array
+	 *
+	 * @param plaintext
+	 * @param algorithm
+	 * @param encoding
+	 *
+	 * @return
+	 *
+	 * @throws IllegalArgumentException
+	 * 		if the requested algorithm is not available
+	 */
+	public static String digest(final byte[] plaintext, final String algorithm, final int encoding)
+	{
+		try
+		{
+			return encode(MessageDigest.getInstance(algorithm).digest(plaintext), encoding);
+		}
+		catch (NoSuchAlgorithmException e)
+		{
+			throw new IllegalArgumentException("No such digest algorithm: " + algorithm, e);
+		}
+	}
+
+
 	public static String md5(File testFile, int encoding) throws FileNotFoundException, IOException, NoSuchAlgorithmException
 	{
 		return digest(testFile, MD5, encoding);
