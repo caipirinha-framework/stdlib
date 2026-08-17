@@ -15,7 +15,6 @@ import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 
@@ -24,25 +23,8 @@ import java.util.zip.CheckedInputStream;
  */
 public class DigestHelper
 {
-	public static final int ENCODE_BASE64 = 1;
-	public static final int ENCODE_HEX = 2;
-
 	public static final String SHA1 = "SHA1";
 	public static final String MD5 = "MD5";
-
-
-	/**
-	 * Performs HMAC-SHA1 on the UTF-8 byte representation of strings
-	 *
-	 * @param key
-	 * @param plaintext
-	 *
-	 * @return
-	 */
-	public static String sha1hmac(String key, String plaintext)
-	{
-		return sha1hmac(key, plaintext, ENCODE_HEX);
-	}
 
 
 	/**
@@ -50,39 +32,33 @@ public class DigestHelper
 	 *
 	 * @param key
 	 * @param plaintext
-	 *
 	 * @return
 	 */
-	public static String sha1hmac(String key, String plaintext, int encoding)
+	public static String sha1hmac(String key, String plaintext)
 	{
 		byte[] signature = sha1hmac(key.getBytes(), plaintext.getBytes());
 
-		return encode(signature, encoding);
+		return encode(signature);
 	}
 
 
 	/**
 	 * @param key
 	 * @param text
-	 *
 	 * @return
-	 *
 	 * @throws IllegalArgumentException
 	 */
 	public static byte[] sha1hmac(byte[] key, byte[] text) throws IllegalArgumentException
 	{
 		try
 		{
-			SecretKey sk = new SecretKeySpec(key, "HMACSHA1");
-			Mac m = Mac.getInstance(sk.getAlgorithm());
+			final SecretKey sk = new SecretKeySpec(key, "HMACSHA1");
+			final Mac m = Mac.getInstance(sk.getAlgorithm());
+
 			m.init(sk);
 			return m.doFinal(text);
 		}
-		catch (InvalidKeyException e)
-		{
-			throw new IllegalArgumentException(e);
-		}
-		catch (NoSuchAlgorithmException e)
+		catch (InvalidKeyException | NoSuchAlgorithmException e)
 		{
 			throw new IllegalArgumentException(e);
 		}
@@ -99,53 +75,33 @@ public class DigestHelper
 
 	public static String sha1(String plaintext) throws IOException, NoSuchAlgorithmException
 	{
-		return sha1(plaintext, ENCODE_HEX);
-	}
-
-
-	public static String sha1(String plaintext, int encoding) throws IOException, NoSuchAlgorithmException
-	{
-		ByteArrayInputStream is = new ByteArrayInputStream(plaintext.getBytes());
-		try
+		try (ByteArrayInputStream is = new ByteArrayInputStream(plaintext.getBytes()))
 		{
-			return sha1(is, encoding);
-		}
-		finally
-		{
-			is.close();
+			return sha1(is);
 		}
 	}
 
 
 	public static String sha1(File testFile) throws FileNotFoundException, IOException, NoSuchAlgorithmException
 	{
-		return sha1(testFile, ENCODE_HEX);
+		try (FileInputStream fis = new FileInputStream(testFile))
+		{
+			return encode(digest(fis, SHA1));
+		}
 	}
 
 
-	public static String sha1(File testFile, int encoding) throws FileNotFoundException, IOException, NoSuchAlgorithmException
+	public static String sha1(InputStream is) throws FileNotFoundException, IOException, NoSuchAlgorithmException
 	{
-		return digest(testFile, SHA1, encoding);
-	}
-
-
-	public static String sha1(InputStream is, int encoding) throws FileNotFoundException, IOException, NoSuchAlgorithmException
-	{
-		return digest(is, SHA1, encoding);
+		return encode(digest(is, SHA1));
 	}
 
 
 	public static String digest(File testFile, String algorithm, int encoding) throws IOException, NoSuchAlgorithmException
 	{
-		FileInputStream fis = new FileInputStream(testFile);
-
-		try
+		try (FileInputStream fis = new FileInputStream(testFile))
 		{
 			return digest(fis, algorithm, encoding);
-		}
-		finally
-		{
-			fis.close();
 		}
 	}
 
@@ -177,7 +133,7 @@ public class DigestHelper
 	{
 		byte[] digest = digest(is, algorithm);
 
-		return encode(digest, encoding);
+		return encode(digest);
 	}
 
 
@@ -217,22 +173,15 @@ public class DigestHelper
 	}
 
 
-	public static String md5(File testFile) throws FileNotFoundException, IOException, NoSuchAlgorithmException
-	{
-		return md5(testFile, ENCODE_HEX);
-	}
-
-
 	/**
 	 * Compute the hexadecimal MD5 of a byte array
 	 *
 	 * @param plaintext
-	 *
 	 * @return
 	 */
 	public static String md5(final byte[] plaintext)
 	{
-		return digest(plaintext, MD5, ENCODE_HEX);
+		return digest(plaintext, MD5);
 	}
 
 
@@ -241,18 +190,14 @@ public class DigestHelper
 	 *
 	 * @param plaintext
 	 * @param algorithm
-	 * @param encoding
-	 *
 	 * @return
-	 *
-	 * @throws IllegalArgumentException
-	 * 		if the requested algorithm is not available
+	 * @throws IllegalArgumentException if the requested algorithm is not available
 	 */
-	public static String digest(final byte[] plaintext, final String algorithm, final int encoding)
+	public static String digest(final byte[] plaintext, final String algorithm)
 	{
 		try
 		{
-			return encode(MessageDigest.getInstance(algorithm).digest(plaintext), encoding);
+			return encode(MessageDigest.getInstance(algorithm).digest(plaintext));
 		}
 		catch (NoSuchAlgorithmException e)
 		{
@@ -261,22 +206,17 @@ public class DigestHelper
 	}
 
 
-	public static String md5(File testFile, int encoding) throws FileNotFoundException, IOException, NoSuchAlgorithmException
+	public static String md5(File testFile) throws FileNotFoundException, IOException, NoSuchAlgorithmException
 	{
-		return digest(testFile, MD5, encoding);
+		try (FileInputStream fis = new FileInputStream(testFile))
+		{
+			return encode(digest(fis, MD5));
+		}
 	}
 
 
-	private static String encode(final byte[] in, final int method)
+	private static String encode(final byte[] in)
 	{
-		switch (method)
-		{
-			case ENCODE_HEX:
-				return HexHelper.toHex(in);
-			case ENCODE_BASE64:
-				return Base64.getEncoder().encodeToString(in);
-			default:
-				throw new IllegalArgumentException("Unsupported encoding method!");
-		}
+		return HexHelper.toHex(in);
 	}
 }
