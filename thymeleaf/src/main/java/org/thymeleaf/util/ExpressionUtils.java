@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2022, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 
 package org.thymeleaf.util;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -30,7 +31,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Currency;
 import java.util.Date;
+import java.util.Deque;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,7 +50,24 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.AtomicMarkableReference;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.AtomicStampedReference;
+import java.util.concurrent.atomic.DoubleAccumulator;
+import java.util.concurrent.atomic.DoubleAdder;
+import java.util.concurrent.atomic.LongAccumulator;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,15 +86,17 @@ public final class ExpressionUtils {
                     "java.time."));
     private static final Set<String> BLOCKED_TYPE_REFERENCE_PACKAGE_NAME_PREFIXES =
             new HashSet<>(Arrays.asList(
-                    "com.squareup.javapoet.",
+                    "ch.qos.logback.", "com.squareup.javapoet.",
+                    "com.zaxxer.hikari.", "com.fasterxml.jackson.", "tools.jackson.",
+                    "groovy.", "io.netty.", "javassist.", "javax0.geci.", "kotlin.",
                     "net.bytebuddy.", "net.sf.cglib.",
-                    "javassist.", "javax0.geci.",
-                    "org.apache.bcel.", "org.aspectj.", "org.javassist.", "org.mockito.", "org.objectweb.asm.",
-                    "org.objenesis.", "org.springframework.aot.", "org.springframework.asm.",
-                    "org.springframework.cglib.", "org.springframework.javapoet.", "org.springframework.objenesis.",
-                    "org.springframework.web.", "org.springframework.webflow.", "org.springframework.context.",
-                    "org.springframework.beans.", "org.springframework.aspects.", "org.springframework.aop.",
-                    "org.springframework.expression.", "org.springframework.util."));
+                    "org.apache.tomcat.jdbc.", "org.apache.commons.dbcp2.",
+                    "org.apache.commons.lang.reflect.", "org.apache.commons.lang3.reflect.",
+                    "org.apache.bcel.", "org.apache.logging.", "org.aspectj.",
+                    "org.codehaus.groovy.", "org.eclipse.jetty.", "org.glassfish.",
+                    "org.javassist.", "org.jboss.", "org.jetbrains.kotlin.", "org.jruby.", "org.junit.",
+                    "org.mockito.", "org.mortbay.jetty.", "org.objectweb.asm.", "org.objenesis.",
+                    "org.python.", "org.slf4j.", "org.springframework.", "scala."));
 
 
     private static final Set<String> ALLOWED_JAVA_CLASS_NAMES;
@@ -87,21 +109,31 @@ public final class ExpressionUtils {
                     BigDecimal.class, BigInteger.class, RoundingMode.class,
                     // java.util
                     ArrayList.class, LinkedList.class, HashMap.class, LinkedHashMap.class, HashSet.class,
-                    LinkedHashSet.class, Iterator.class, Enumeration.class, Locale.class, Properties.class,
+                    LinkedHashSet.class, Iterator.class, Enumeration.class, Deque.class, Locale.class, Properties.class,
                     Date.class, Calendar.class, Optional.class, OptionalDouble.class, OptionalInt.class,
-                    OptionalLong.class, UUID.class,
+                    OptionalLong.class, UUID.class, Currency.class,
+                    // java.util.concurrent.atomic
+                    AtomicBoolean.class, AtomicInteger.class, AtomicIntegerArray.class, AtomicIntegerFieldUpdater.class,
+                    AtomicLong.class, AtomicLongArray.class, AtomicLongFieldUpdater.class,
+                    AtomicMarkableReference.class, AtomicReference.class, AtomicReferenceArray.class,
+                    AtomicReferenceFieldUpdater.class, AtomicStampedReference.class, DoubleAccumulator.class,
+                    DoubleAdder.class, LongAccumulator.class, LongAdder.class,
                     // java.sql
                     java.sql.Date.class, Time.class, Timestamp.class));
 
     private static final Set<String> ALLOWED_JAVA_SUPERS_NAMES;
     private static final Set<Class<?>> ALLOWED_JAVA_SUPERS =
             new HashSet<>(Arrays.asList(
+                    // java.lang
+                    CharSequence.class,
                     // java.util
                     Collection.class, Iterable.class, Iterator.class, List.class, Map.class, Map.Entry.class, Set.class,
-                    Calendar.class, Stream.class));
+                    Calendar.class, TimeZone.class, Stream.class));
 
     private static final Set<String> BLOCKED_MEMBER_CALL_JAVA_SUPERS_NAMES =
             new HashSet<>(Arrays.asList(
+                    // java.lang
+                    "java.lang.ClassLoader",
                     // org.thymeleaf
                     "org.thymeleaf.standard.expression.IStandardVariableExpressionEvaluator",
                     "org.thymeleaf.standard.expression.IStandardExpressionParser",
@@ -112,43 +144,56 @@ public final class ExpressionUtils {
                     "org.thymeleaf.spring6.expression.IThymeleafEvaluationContext",
                     // org.springframework
                     "org.springframework.web.servlet.support.RequestContext",
-                    "org.springframework.web.reactive.result.view.RequestContext"));
+                    "org.springframework.web.reactive.result.view.RequestContext",
+                    "org.springframework.core.io.ResourceLoader"));
     private static final Set<Class<?>> BLOCKED_MEMBER_CALL_JAVA_SUPERS;
+
+    private static final Set<String> ALLOWED_CLASS_METHODS =
+            new HashSet<>(Arrays.asList(
+                    "getName", "getSimpleName", "isAssignableFrom", "isInstance",
+                    "isInterface", "isPrimitive", "isRecord", "isAnnotation", "isArray", "isEnum"));
+    private static final Set<String> BLOCKED_CLASS_METHODS =
+            Arrays.stream(Class.class.getDeclaredMethods()).map(Method::getName).collect(Collectors.toSet());
 
 
     static {
-        ALLOWED_JAVA_CLASS_NAMES = ALLOWED_JAVA_CLASSES.stream().map(c -> c.getName()).collect(Collectors.toSet());
-        ALLOWED_JAVA_SUPERS_NAMES = ALLOWED_JAVA_SUPERS.stream().map(c -> c.getName()).collect(Collectors.toSet());
+        ALLOWED_JAVA_CLASS_NAMES = ALLOWED_JAVA_CLASSES.stream().map(Class::getName).collect(Collectors.toSet());
+        ALLOWED_JAVA_SUPERS_NAMES = ALLOWED_JAVA_SUPERS.stream().map(Class::getName).collect(Collectors.toSet());
         BLOCKED_MEMBER_CALL_JAVA_SUPERS = BLOCKED_MEMBER_CALL_JAVA_SUPERS_NAMES.stream().
                 map(className -> {
                     try {
                         return Optional.of(Class.forName(className));
                     } catch (final ClassNotFoundException e) {
-                        return Optional.ofNullable((Class<?>)null);
+                        return Optional.<Class<?>>empty();
                     }
                 }).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
     }
 
 
-    public static String normalize(final String expression) {
+    public static String normalize(final String expression, boolean normalizeCase) {
         if (expression == null) {
-            return expression;
+            return null;
         }
+        final String exp = (normalizeCase ? expression.toLowerCase() : expression);
         StringBuilder strBuilder = null;
-        final int expLen = expression.length();
+        final int expLen = exp.length();
         char c;
         for (int i = 0; i < expLen; i++) {
-            c = expression.charAt(i);
-            if (c != '\n' && (c < '\u0020' || (c >= '\u007F' && c <= '\u009F'))) {
+            c = exp.charAt(i);
+            if (c != '\n' && (c < '\u0020' || (c >= '\u007F' && c <= '\u009F') || Character.isWhitespace(c))) {
                 if (strBuilder == null) {
                     strBuilder = new StringBuilder(expLen);
-                    strBuilder.append(expression, 0, i);
+                    strBuilder.append(exp, 0, i);
+                }
+                if (Character.isWhitespace(c)) {
+                    // For whitespaces (non-linefeed), we are simplifying to a regular whitespace char
+                    strBuilder.append(' ');
                 }
             } else if (strBuilder != null) {
                 strBuilder.append(c);
             }
         }
-        return strBuilder == null ? expression : strBuilder.toString();
+        return strBuilder == null ? exp : strBuilder.toString();
     }
 
 
@@ -158,47 +203,33 @@ public final class ExpressionUtils {
     }
 
     static boolean isTypeBlockedForAllPurposes(final String typeName) {
-        final char c0 = typeName.charAt(0);
-        if (c0 != 'c' && c0 != 'j' && c0 != 'o' && c0 != 's'){ // All blocked packages start with: c, j, o, s
+        if (isJavaPackage(typeName) && ALLOWED_ALL_PURPOSES_PACKAGE_NAME_PREFIXES.stream().anyMatch(typeName::startsWith)) {
             return false;
         }
-        if (c0 == 'c') { // Shortcut for the lot of allowed "com." packages out there.
-            return typeName.startsWith("com.sun.");
-        }
-        if (isJavaPackage(typeName)) {
-            return !typeName.startsWith("java.time.");
-        }
-        return BLOCKED_ALL_PURPOSES_PACKAGE_NAME_PREFIXES.stream().anyMatch(prefix -> typeName.startsWith(prefix));
+        return BLOCKED_ALL_PURPOSES_PACKAGE_NAME_PREFIXES.stream().anyMatch(typeName::startsWith);
     }
 
     static boolean isTypeBlockedForTypeReference(final String typeName) {
         if (isTypeBlockedForAllPurposes(typeName)) {
             return true;
         }
-        final char c0 = typeName.charAt(0);
-        if (c0 != 'c' && c0 != 'n' && c0 != 'j' && c0 != 'o'){ // All blocked packages start with: c, n, j, o
-            return false;
-        }
-        if (c0 == 'c') { // Shortcut for the lot of allowed "com." packages out there.
-            return typeName.startsWith("com.squareup.javapoet.");
-        }
-        return BLOCKED_TYPE_REFERENCE_PACKAGE_NAME_PREFIXES.stream().anyMatch(prefix -> typeName.startsWith(prefix));
+        return BLOCKED_TYPE_REFERENCE_PACKAGE_NAME_PREFIXES.stream().anyMatch(typeName::startsWith);
     }
 
 
 
-    public static boolean isTypeAllowed(final String typeName) {
+    public static boolean isTypeForbidden(final String typeName) {
 
         Validate.notNull(typeName, "Type name cannot be null");
 
-        final String normalizedTypeName = normalize(typeName);
+        final String normalizedTypeName = normalize(typeName, false);
 
         if (!isTypeBlockedForTypeReference(normalizedTypeName)) {
-            return true;
+            return false;
         }
 
         // We know the package is blocked, but certain classes and interfaces in blocked packages are allowed
-        return ALLOWED_JAVA_CLASS_NAMES.contains(normalizedTypeName) || ALLOWED_JAVA_SUPERS_NAMES.contains(normalizedTypeName);
+        return !ALLOWED_JAVA_CLASS_NAMES.contains(normalizedTypeName) && !ALLOWED_JAVA_SUPERS_NAMES.contains(normalizedTypeName);
 
     }
 
@@ -209,14 +240,14 @@ public final class ExpressionUtils {
     }
 
 
-    static boolean isMemberAllowedForInstanceOfType(final Class<?> type, final String memberName) {
+    static boolean isMemberForbiddenForInstanceOfType(final Class<?> type, final String memberName) {
 
         Validate.notNull(type, "Type cannot be null");
 
         final String typeName = type.getName();
 
         if (!isTypeBlockedForAllPurposes(typeName) && !isTypeBlockedForMemberCalls(type)) {
-            return true;
+            return false;
         }
 
         // We know the package is blocked, so whether we can actually call methods or see fields of it depends
@@ -225,53 +256,53 @@ public final class ExpressionUtils {
 
         // Enums and annotations in blocked packages are OK
         if (type.isEnum() || type.isAnnotation()) {
-            return true;
+            return false;
         }
 
         // We will allow methods to be called on JDK-proxied classes. These proxied
         // classes are typically created under "jdk.proxyX" packages so calling methods
         // on them would be forbidden by default if we didn't allow this explicitly.
         if (Proxy.isProxyClass(type)) {
-            return true;
+            return false;
         }
 
         if (ALLOWED_JAVA_CLASSES.contains(type)) {
-            return true;
+            return false;
         }
 
         // Otherwise, we will restrict calls to methods declared in one of the allowed interfaces or superclasses
         return ALLOWED_JAVA_SUPERS.stream()
                 .filter(i -> i.isAssignableFrom(type))
-                .anyMatch(i -> Arrays.stream(i.getDeclaredMethods()).anyMatch(m -> memberName.equals(m.getName())));
+                .noneMatch(i -> Arrays.stream(i.getDeclaredMethods()).anyMatch(m -> memberName.equals(m.getName())));
 
     }
 
 
 
-    public static boolean isMemberAllowed(final Object target, final String memberName) {
+    public static boolean isMemberForbidden(final Object target, final String memberName) {
 
         Validate.notNull(memberName, "Member name cannot be null");
 
         if (target == null) {
-            return true;
+            return false;
         }
 
-        final String normalizedMemberName = normalize(memberName);
+        final String normalizedMemberName = normalize(memberName, false);
 
         // Calling Object#getClass() or Object#toString() will always be allowed
         if ("getClass".equals(normalizedMemberName) || "toString".equals(normalizedMemberName)) {
-            return true;
+            return false;
         }
 
         // If the target itself is a class, that means we are calling a static method on it. And therefore we
-        // will need to determine whether the class itself is blocked.
+        // will need to determine whether the class itself is blocked and whether the method being called is allowed.
         if (target instanceof Class<?>) {
             final String targetTypeName = ((Class<?>) target).getName();
-            // If target is a blocked class, we will only allow calling "getName"
-            return "getName".equals(normalizedMemberName) || isTypeAllowed(targetTypeName);
+            return !ALLOWED_CLASS_METHODS.contains(normalizedMemberName) &&
+                    (BLOCKED_CLASS_METHODS.contains(normalizedMemberName) || isTypeForbidden(targetTypeName));
         }
 
-        return isMemberAllowedForInstanceOfType(target.getClass(), normalizedMemberName);
+        return isMemberForbiddenForInstanceOfType(target.getClass(), normalizedMemberName);
 
     }
 

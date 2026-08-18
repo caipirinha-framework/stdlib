@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ public final class StandardRemovableAttributeTagProcessor extends AbstractStanda
                     "accept-charset",
                     "accesskey",
                     "align",
-                    "alt",
                     "archive",
                     "audio",
                     "autocomplete",
@@ -101,6 +100,7 @@ public final class StandardRemovableAttributeTagProcessor extends AbstractStanda
                     "maxlength",
                     "media",
                     "min",
+                    "minlength",
                     "optimum",
                     "pattern",
                     "placeholder",

@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ public final class StandardNonRemovableAttributeTagProcessor extends AbstractSta
     // processors executing afterwards (e.g. th:field) might need attribute values already processed by these.
     public static final String[] ATTR_NAMES =
             new String[] {
+                    "alt",
                     "name",
                     "type"
             };

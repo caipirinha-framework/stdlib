@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -68,8 +68,8 @@ final class ConfigurationPrinterHelper {
 
     private static final Logger configLogger = LoggerFactory.getLogger(CONFIGURATION_LOGGER_NAME);
 
-    private static String THYMELEAF_VERSION = Thymeleaf.getVersion();
-    private static String THYMELEAF_BUILD_TIMESTAMP = Thymeleaf.getBuildTimestamp();
+    private static String THYMELEAF_VERSION = TemplateEngine.THYMELEAF_VERSION;
+    private static String THYMELEAF_BUILD_TIMESTAMP = TemplateEngine.THYMELEAF_BUILD_TIMESTAMP;
 
     
     

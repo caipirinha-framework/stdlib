@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ public abstract class AbstractConfigurableTemplateResolver extends AbstractTempl
     /**
      * <p>
      *   Default value for the cache TTL: null. This means the parsed template will live in
-     *   cache until removed by LRU (because of being the oldest entry).
+     *   cache until removed by FIFO (because of being the oldest inserted entry).
      * </p>
      */
     public static final Long DEFAULT_CACHE_TTL_MS = null;
@@ -417,10 +417,10 @@ public abstract class AbstractConfigurableTemplateResolver extends AbstractTempl
      * </p>
      * <p>
      *   If a template is resolved as <i>cacheable</i> but cache TTL is null,
-     *   this means the template will live in cache until evicted by LRU
-     *   (Least Recently Used) algorithm for being the oldest entry in cache.
+     *   this means the template will live in cache until evicted by FIFO
+     *   (oldest inserted entry in cache).
      * </p>
-     * 
+     *
      * @return the cache TTL for resolved templates.
      */
     public final Long getCacheTTLMs() {
@@ -434,11 +434,11 @@ public abstract class AbstractConfigurableTemplateResolver extends AbstractTempl
      * </p>
      * <p>
      *   If a template is resolved as <i>cacheable</i> but cache TTL is null,
-     *   this means the template will live in cache until evicted by LRU
-     *   (Least Recently Used) algorithm for being the oldest entry in cache.
+     *   this means the template will live in cache until evicted by FIFO
+     *   (oldest inserted entry in cache).
      * </p>
-     * 
-     * @param cacheTTLMs the new cache TTL, or null for using natural LRU eviction.
+     *
+     * @param cacheTTLMs the new cache TTL, or null for using natural FIFO eviction.
      */
     public final void setCacheTTLMs(final Long cacheTTLMs) {
         this.cacheTTLMs = cacheTTLMs;
@@ -970,6 +970,10 @@ public abstract class AbstractConfigurableTemplateResolver extends AbstractTempl
 
         final boolean shouldApplySuffix =
                 hasSuffix && (forceSuffix || !ContentTypeUtils.hasRecognizedFileExtension(unaliasedName));
+
+        if (hasPrefix && prefix.endsWith("/") && unaliasedName.startsWith("/")) {
+            unaliasedName = unaliasedName.substring(1);
+        }
 
         if (!hasPrefix && !shouldApplySuffix){
             return unaliasedName;

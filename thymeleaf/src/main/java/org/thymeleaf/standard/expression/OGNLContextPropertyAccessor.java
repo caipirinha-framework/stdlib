@@ -2,7 +2,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public final class OGNLContextPropertyAccessor implements PropertyAccessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OGNLContextPropertyAccessor.class);
 
-    public static final String RESTRICT_REQUEST_PARAMETERS = "%RESTRICT_REQUEST_PARAMETERS%";
+    public static final String RESTRICT_EXPRESSION_OBJECTS = "%RESTRICT_EXPRESSION_OBJECTS%";
     static final String REQUEST_PARAMETERS_RESTRICTED_VARIABLE_NAME = "param";
 
 
@@ -72,7 +72,7 @@ public final class OGNLContextPropertyAccessor implements PropertyAccessor {
                     "in this case the target object is " + (target == null? "null" : ("of class " + target.getClass().getName())));
         }
 
-        if (REQUEST_PARAMETERS_RESTRICTED_VARIABLE_NAME.equals(name) && ognlContext != null && ognlContext.containsKey(RESTRICT_REQUEST_PARAMETERS)) {
+        if (REQUEST_PARAMETERS_RESTRICTED_VARIABLE_NAME.equals(name) && ognlContext != null && ognlContext.containsKey(RESTRICT_EXPRESSION_OBJECTS)) {
             throw new OgnlException(
                     "Access to variable \"" + name + "\" is forbidden in this context. Note some restrictions apply to " +
                     "variable access. For example, direct access to request parameters is forbidden in preprocessing and " +

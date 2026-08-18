@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -251,10 +251,29 @@ final class TextParsingElementUtil {
 
         final int len = maxi - offset;
 
-        return (len > 2 &&
-                    buffer[offset] == '[' &&
-                    buffer[offset + 1] == '/' &&
-                    isElementNameOrEnd(buffer, offset + 2, maxi));
+        if (len <= 2 || buffer[offset] != '[' || buffer[offset + 1] != '/') {
+            return false;
+        }
+
+        final int nameStart = offset + 2;
+
+        if (!isElementNameOrEnd(buffer, nameStart, maxi)) {
+            return false;
+        }
+
+        // Scan ahead to ensure the name between '[/' and ']' contains no '/',
+        // which would indicate content like [/regex/flags] rather than a close element.
+        for (int i = nameStart; i < maxi; i++) {
+            final char c = buffer[i];
+            if (c == ']' || Character.isWhitespace(c)) {
+                return true;
+            }
+            if (c == '/') {
+                return false;
+            }
+        }
+
+        return true;
 
     }
 

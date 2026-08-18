@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.thymeleaf.IEngineConfiguration;
 import org.thymeleaf.engine.ITemplateHandler;
 import org.thymeleaf.engine.TemplateHandlerAdapterMarkupHandler;
 import org.thymeleaf.exceptions.TemplateInputException;
+import org.thymeleaf.exceptions.TemplateProcessingException;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateparser.ITemplateParser;
 import org.thymeleaf.templateparser.markup.decoupled.DecoupledTemplateLogic;
@@ -235,6 +236,19 @@ public abstract class AbstractMarkupTemplateParser implements ITemplateParser {
             throw new TemplateInputException(message, (resource != null? resource.getDescription() : template), e);
         } catch (final ParseException e) {
             final String message = "An error happened during template parsing";
+            // We check the cause chain for a TemplateProcessingException FIRST, before looking at
+            // AttoParser's own e.getLine()/getCol(): a TemplateProcessingException's line/col is tracked
+            // by Thymeleaf itself at the exact point of processing (e.g. the offending th:* attribute),
+            // and so is always at least as precise -- usually more precise -- than whatever position
+            // AttoParser's own wrapping exception reports, which only reflects its scanner's position at
+            // the (possibly later) point where the exception was caught.
+            final Throwable cause = e.getCause();
+            if (cause instanceof TemplateProcessingException) {
+                final TemplateProcessingException tpe = (TemplateProcessingException) cause;
+                if (tpe.hasLineAndCol()) {
+                    throw new TemplateInputException(message, (resource != null? resource.getDescription() : template), tpe.getLine().intValue(), tpe.getCol().intValue(), e);
+                }
+            }
             if (e.getLine() != null && e.getCol() != null) {
                 throw new TemplateInputException(message, (resource != null? resource.getDescription() : template), e.getLine().intValue(), e.getCol().intValue(), e);
             }

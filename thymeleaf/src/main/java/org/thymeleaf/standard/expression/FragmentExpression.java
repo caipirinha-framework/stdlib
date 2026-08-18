@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -325,10 +325,11 @@ public final class FragmentExpression extends SimpleExpression {
             // If there are parentheses, the last char must be an ending one.
             return -1;
         }
+        boolean inLiteral = false;
         int parenLevel = 1;
         for (int i = inputLen - 2; i >= 0; i--) {
             final char c = input.charAt(i);
-            if (c == '(') {
+            if (c == '(' && !inLiteral) {
                 parenLevel--;
                 if (parenLevel == 0) {
                     // We have closed a parenthesis at level 0, this might be what we were looking for.
@@ -338,8 +339,10 @@ public final class FragmentExpression extends SimpleExpression {
                     }
                     return i;
                 }
-            } else if (c == ')') {
+            } else if (c == ')' && !inLiteral) {
                 parenLevel++;
+            } else if (c == '\'' && !TextLiteralExpression.isDelimiterEscaped(input, i)) {
+                inLiteral = !inLiteral;
             }
         }
         // Cannot parse: will never be able to determine whether there are parameters or not, because they aren't

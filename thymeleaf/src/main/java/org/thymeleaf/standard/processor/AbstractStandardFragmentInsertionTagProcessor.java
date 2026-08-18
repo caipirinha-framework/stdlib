@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -69,6 +69,8 @@ public abstract class AbstractStandardFragmentInsertionTagProcessor extends Abst
 
     private static final String FRAGMENT_ATTR_NAME = "fragment";
 
+    private static final int MAX_FRAGMENT_INCLUSION_DEPTH = 100;
+
 
     private final boolean replaceHost;
     // This flag should probably be removed once th:include is removed in 3.2 (not recommended in 3.0, deprecated in 3.1)
@@ -107,6 +109,15 @@ public abstract class AbstractStandardFragmentInsertionTagProcessor extends Abst
 
         if (StringUtils.isEmptyOrWhitespace(attributeValue)) {
             throw new TemplateProcessingException("Fragment specifications cannot be empty");
+        }
+
+        final int currentDepth = context.getTemplateStack().size();
+        if (currentDepth >= MAX_FRAGMENT_INCLUSION_DEPTH) {
+            throw new TemplateProcessingException(
+                    "Fragment inclusion depth (" + currentDepth + ") exceeded the allowed maximum of " +
+                    MAX_FRAGMENT_INCLUSION_DEPTH + ". This is most likely caused by recursive template inclusion. " +
+                    "Current template: \"" + context.getTemplateData().getTemplate() + "\". " +
+                    "Fragment expression: \"" + attributeValue + "\"");
         }
 
         final IEngineConfiguration configuration = context.getConfiguration();

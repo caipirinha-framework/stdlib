@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2022, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -112,9 +112,17 @@ public class JavaxServletWebApplication implements IServletWebApplication {
 
     private boolean servletContextMatches(final HttpServletRequest httpServletRequest) {
         // We should not be directly matching servletContext objects because a wrapper might have been applied
-        final String servletContextPath = this.servletContext.getContextPath();
-        final String requestServletContextPath = httpServletRequest.getServletContext().getContextPath();
+        final String servletContextPath =
+                normalizeRootContextPath(this.servletContext.getContextPath());
+        final String requestServletContextPath =
+                normalizeRootContextPath(httpServletRequest.getServletContext().getContextPath());
         return Objects.equals(servletContextPath, requestServletContextPath);
+    }
+
+    private static String normalizeRootContextPath(final String rootContextPath) {
+        // Although the Servlet API establishes "" as a value for the root context path,
+        // some containers seem to return "/" or null for the same.
+        return rootContextPath == null || rootContextPath.equals("/") ? "" : rootContextPath;
     }
 
 }

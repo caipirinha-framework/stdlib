@@ -40,7 +40,7 @@
 	</parent>
 
 	<properties>
-		<attoparser.version>2.0.7.RELEASE</attoparser.version>
+		<attoparser.version>2.0.9.RELEASE</attoparser.version>
 		<unbescape.version>1.1.6.RELEASE</unbescape.version>
 
 		<!-- A project-name-based approach is adopted for module name (instead a reverse-DNS).      -->

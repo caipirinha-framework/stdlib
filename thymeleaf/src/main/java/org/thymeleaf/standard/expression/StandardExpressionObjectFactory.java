@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ public class StandardExpressionObjectFactory implements IExpressionObjectFactory
 
     public static final String CONTEXT_EXPRESSION_OBJECT_NAME = "ctx";
     public static final String ROOT_EXPRESSION_OBJECT_NAME = "root";
+    public static final String THIS_EXPRESSION_OBJECT_NAME = "this";
     public static final String VARIABLES_EXPRESSION_OBJECT_NAME = "vars";
     public static final String SELECTION_TARGET_EXPRESSION_OBJECT_NAME = "object";
     public static final String LOCALE_EXPRESSION_OBJECT_NAME = "locale";

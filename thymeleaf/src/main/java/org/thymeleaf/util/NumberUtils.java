@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.List;
 import java.util.Locale;
 
@@ -268,7 +269,7 @@ public final class NumberUtils {
 
     /**
      * Formats a number as a currency value according to the specified locale.
-     * 
+     *
      * @param target The number to format.
      * @param locale Locale to use for formatting.
      * @return The number formatted as a currency, or {@code null} if the number
@@ -282,7 +283,36 @@ public final class NumberUtils {
             return null;
         }
 
-        NumberFormat format = NumberFormat.getCurrencyInstance(locale);
+        final NumberFormat format = NumberFormat.getCurrencyInstance(locale);
+
+        return format.format(target);
+    }
+
+    /**
+     * Formats a number as a currency value according to the specified locale and currency.
+     * The locale controls formatting conventions (digit grouping, decimal separator, symbol
+     * placement), while the currency controls the symbol, ISO code and number of fraction
+     * digits used regardless of what the locale's default currency would be.
+     *
+     * @param target   The number to format.
+     * @param locale   Locale to use for formatting conventions.
+     * @param currency Currency to use, overriding the locale's default currency.
+     * @return The number formatted as a currency, or {@code null} if the number
+     *         given is {@code null}.
+     */
+    public static String formatCurrency(final Number target, final Locale locale, final Currency currency) {
+
+        Validate.notNull(locale, "Locale cannot be null");
+        Validate.notNull(currency, "Currency cannot be null");
+
+        if (target == null) {
+            return null;
+        }
+
+        final NumberFormat format = NumberFormat.getCurrencyInstance(locale);
+        format.setCurrency(currency);
+        format.setMinimumFractionDigits(currency.getDefaultFractionDigits());
+        format.setMaximumFractionDigits(currency.getDefaultFractionDigits());
 
         return format.format(target);
     }
@@ -308,7 +338,7 @@ public final class NumberUtils {
             return null;
         }
 
-        NumberFormat format = NumberFormat.getPercentInstance(locale);
+        final NumberFormat format = NumberFormat.getPercentInstance(locale);
         format.setMinimumFractionDigits(fractionDigits.intValue());
         format.setMaximumFractionDigits(fractionDigits.intValue());
         if (minIntegerDigits != null) {

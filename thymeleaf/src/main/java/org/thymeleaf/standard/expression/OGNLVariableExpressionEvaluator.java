@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@
  */
 package org.thymeleaf.standard.expression;
 
+import ognl.ASTVarRef;
 import ognl.AbstractMemberAccess;
 import ognl.ClassResolver;
 import ognl.MemberAccess;
+import ognl.Node;
 import ognl.OgnlContext;
 import ognl.OgnlException;
 import ognl.OgnlRuntime;
@@ -69,8 +71,8 @@ public final class OGNLVariableExpressionEvaluator
 
     private static Map<String,Object> CONTEXT_VARIABLES_MAP_NOEXPOBJECTS_RESTRICTIONS =
             (Map<String,Object>) (Map<?,?>)Collections.singletonMap(
-                    OGNLContextPropertyAccessor.RESTRICT_REQUEST_PARAMETERS,
-                    OGNLContextPropertyAccessor.RESTRICT_REQUEST_PARAMETERS);
+                    OGNLContextPropertyAccessor.RESTRICT_EXPRESSION_OBJECTS,
+                    OGNLContextPropertyAccessor.RESTRICT_EXPRESSION_OBJECTS);
 
     // TODO should we replace with OGNLPublicMemberAccess for back-compat with earlier vendored stdlib Thymeleaf?
     private static MemberAccess MEMBER_ACCESS = new ThymeleafACLMemberAccess();
@@ -113,24 +115,34 @@ public final class OGNLVariableExpressionEvaluator
         final IStandardVariableExpression expression,
         final StandardExpressionExecutionContext expContext,
         final boolean applyOGNLShortcuts) {
-       
+
+        final IEngineConfiguration configuration = context.getConfiguration();
+
+        final String exp = expression.getExpression();
+        final boolean useSelectionAsRoot = expression.getUseSelectionAsRoot();
+
+        if (exp == null) {
+            throw new TemplateProcessingException("Expression content is null, which is not allowed");
+        }
+
+        final ComputedOGNLExpression parsedExpression;
+        try {
+            parsedExpression =
+                    obtainComputedOGNLExpression(configuration, expression, exp, expContext, applyOGNLShortcuts);
+        } catch (final OgnlException e) {
+            throw new TemplateProcessingException(
+                    "Exception evaluating OGNL expression: \"" + expression.getExpression() + "\"", e);
+        }
+
+        if (expContext.getRestrictVariableAccess()) {
+            checkRestrictedVariables(parsedExpression.expression);
+        }
+
         try {
 
             if (logger.isTraceEnabled()) {
                 logger.trace("[THYMELEAF][{}] OGNL expression: evaluating expression \"{}\" on target", TemplateEngine.threadIndex(), expression.getExpression());
             }
-
-            final IEngineConfiguration configuration = context.getConfiguration();
-
-            final String exp = expression.getExpression();
-            final boolean useSelectionAsRoot = expression.getUseSelectionAsRoot();
-
-            if (exp == null) {
-                throw new TemplateProcessingException("Expression content is null, which is not allowed");
-            }
-
-            final ComputedOGNLExpression parsedExpression =
-                    obtainComputedOGNLExpression(configuration, expression, exp, expContext, applyOGNLShortcuts);
 
             final Map<String,Object> contextVariablesMap;
             if (parsedExpression.mightNeedExpressionObjects) {
@@ -151,9 +163,9 @@ public final class OGNLVariableExpressionEvaluator
                 // agent in charge of applying such restrictions, is by adding a context variable that the property accessor
                 // can later lookup during evaluation.
                 if (expContext.getRestrictVariableAccess()) {
-                    contextVariablesMap.put(OGNLContextPropertyAccessor.RESTRICT_REQUEST_PARAMETERS, OGNLContextPropertyAccessor.RESTRICT_REQUEST_PARAMETERS);
+                    contextVariablesMap.put(OGNLContextPropertyAccessor.RESTRICT_EXPRESSION_OBJECTS, OGNLContextPropertyAccessor.RESTRICT_EXPRESSION_OBJECTS);
                 } else {
-                    contextVariablesMap.remove(OGNLContextPropertyAccessor.RESTRICT_REQUEST_PARAMETERS);
+                    contextVariablesMap.remove(OGNLContextPropertyAccessor.RESTRICT_EXPRESSION_OBJECTS);
                 }
 
             } else {
@@ -215,10 +227,10 @@ public final class OGNLVariableExpressionEvaluator
         // of method calls and references to allowed classes.
         final boolean doApplyOGNLShortcuts =
                 applyOGNLShortcuts &&
-                        !expContext.getRestrictVariableAccess() && !expContext.getRestrictInstantiationAndStatic();
+                        !expContext.getRestrictVariableAccess() && !expContext.getRestrictExternalAccess();
 
-        if (expContext.getRestrictInstantiationAndStatic()
-                && StandardExpressionUtils.containsOGNLInstantiationOrStaticOrParam(exp)) {
+        if (expContext.getRestrictExternalAccess()
+                && StandardExpressionUtils.containsExternalAccess(exp)) {
             throw new TemplateProcessingException(
                 "Instantiation of new objects and access to static classes or parameters is forbidden in this context");
         }
@@ -343,6 +355,31 @@ public final class OGNLVariableExpressionEvaluator
     }
 
 
+    private static void checkRestrictedVariables(final Object parsedExpression) {
+        if (parsedExpression instanceof Node) {
+            checkRestrictedVariables((Node) parsedExpression);
+        }
+    }
+
+
+    private static void checkRestrictedVariables(final Node node) {
+        if (node instanceof ASTVarRef) {
+            final String varName = node.toString();
+            // All OGNL variable references start with '#'
+            if (varName.length() > 1) {
+                final String name = varName.substring(1);
+                if (OGNLExpressionObjectsWrapper.isRestricted(name)) {
+                    throw new TemplateProcessingException(
+                            String.format("Access to variable '%s' is forbidden in this context.", varName));
+                }
+            }
+        }
+        for (int i = 0; i < node.jjtGetNumChildren(); i++) {
+            checkRestrictedVariables(node.jjtGetChild(i));
+        }
+    }
+
+
 
 
     private static final class ComputedOGNLExpression {
@@ -371,7 +408,7 @@ public final class OGNLVariableExpressionEvaluator
 
         @Override
         public Class<?> classForName(final String className, final Map context) throws ClassNotFoundException {
-            if (!ExpressionUtils.isTypeAllowed(className)) {
+            if (ExpressionUtils.isTypeForbidden(className)) {
                 throw new TemplateProcessingException(
                         String.format(
                                 "Access is forbidden for type '%s' in this expression context.", className));
@@ -430,7 +467,7 @@ public final class OGNLVariableExpressionEvaluator
                 return false;
             }
             if (member instanceof Method) {
-                if (!ExpressionUtils.isMemberAllowed(target, member.getName())) {
+                if (ExpressionUtils.isMemberForbidden(target, member.getName())) {
                     throw new TemplateProcessingException(
                             String.format(
                                     "Accessing member '%s' is forbidden for type '%s' in this expression context.",

@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -96,7 +97,23 @@ public final class StandardJavaScriptSerializer implements IStandardJavaScriptSe
             final String objectMapperPackageName = objectMapperClass.getPackage().getName();
             return objectMapperPackageName.substring(0, objectMapperPackageName.length() - ".databind".length());
         } catch (final Throwable ignored) {
-            // Nothing bad - simply Jackson is not in the classpath
+            // Nothing bad - simply Jackson 2 is not in the classpath
+            return null;
+        }
+    }
+
+
+    private static String computeJackson3PackageNameIfPresent() {
+        // Jackson 3 relocated its packages from 'com.fasterxml.jackson' to 'tools.jackson'.
+        // We detect it via reflection to avoid any compile-time dependency on Jackson 3 classes.
+        try {
+            final Class<?> objectMapperClass = ClassLoaderUtils.findClass("tools.jackson.databind.ObjectMapper");
+            if (objectMapperClass == null) {
+                return null;
+            }
+            final String objectMapperPackageName = objectMapperClass.getPackage().getName();
+            return objectMapperPackageName.substring(0, objectMapperPackageName.length() - ".databind".length());
+        } catch (final Throwable ignored) {
             return null;
         }
     }
@@ -109,18 +126,30 @@ public final class StandardJavaScriptSerializer implements IStandardJavaScriptSe
 
         IStandardJavaScriptSerializer newDelegate = null;
 
-        final String jacksonPrefix = (useJacksonIfAvailable? computeJacksonPackageNameIfPresent() : null);
+        if (useJacksonIfAvailable) {
 
-        if (jacksonPrefix != null) {
+            // Try Jackson 2 first (com.fasterxml.jackson.*)
+            final String jackson2Prefix = computeJacksonPackageNameIfPresent();
+            if (jackson2Prefix != null) {
+                try {
+                    newDelegate = new JacksonStandardJavaScriptSerializer(jackson2Prefix);
+                } catch (final Exception e) {
+                    handleErrorLoggingOnJacksonInitialization(e);
+                } catch (final NoSuchMethodError e) {
+                    handleErrorLoggingOnJacksonInitialization(e);
+                }
+            }
 
-            try {
-
-                newDelegate = new JacksonStandardJavaScriptSerializer(jacksonPrefix);
-
-            } catch (final Exception e) {
-                handleErrorLoggingOnJacksonInitialization(e);
-            } catch (final NoSuchMethodError e)  {
-                handleErrorLoggingOnJacksonInitialization(e);
+            // If Jackson 2 was not found or failed to initialize, try Jackson 3 (tools.jackson.*)
+            if (newDelegate == null) {
+                final String jackson3Prefix = computeJackson3PackageNameIfPresent();
+                if (jackson3Prefix != null) {
+                    try {
+                        newDelegate = new Jackson3StandardJavaScriptSerializer(jackson3Prefix);
+                    } catch (final Exception e) {
+                        handleErrorLoggingOnJacksonInitialization(e);
+                    }
+                }
             }
 
         }
@@ -156,6 +185,7 @@ public final class StandardJavaScriptSerializer implements IStandardJavaScriptSe
             super();
 
             this.mapper = new ObjectMapper();
+            this.mapper.findAndRegisterModules();
             this.mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
             this.mapper.disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
             this.mapper.getFactory().configure(JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature(), true);
@@ -194,6 +224,212 @@ public final class StandardJavaScriptSerializer implements IStandardJavaScriptSe
 
     }
 
+
+
+
+
+    /*
+     * Serializer that uses Jackson 3 (tools.jackson.*) when it is present on the classpath instead of Jackson 2.
+     * All Jackson 3 classes are accessed via reflection to avoid any compile-time dependency on Jackson 3,
+     * keeping the build dependency on Jackson 2 unchanged.
+     *
+     * Jackson 3 made ObjectMapper largely immutable: configuration must be applied via MapperBuilder before
+     * calling build(). The constructor therefore tries JsonMapper.builder() first (the idiomatic Jackson 3
+     * approach, which lets us call defaultDateFormat(...) on the builder), and falls back to direct
+     * ObjectMapper instantiation for any Jackson 3 build that still supports mutable setters.
+     *
+     * The output is post-processed to escape '/' as '\/' and '&' as '\u0026', providing the same XSS safety
+     * guarantees as the Jackson 2 serializer (which achieves this via JacksonThymeleafCharacterEscapes).
+     * Using a StringWriter intermediate buffer also avoids the need to configure AUTO_CLOSE_TARGET on
+     * the Jackson 3 ObjectMapper, since closing a StringWriter is a no-op.
+     */
+    private static final class Jackson3StandardJavaScriptSerializer implements IStandardJavaScriptSerializer {
+
+        private final Object mapper;
+        private final Method writeValueMethod;
+
+
+        Jackson3StandardJavaScriptSerializer(final String jacksonPrefix) throws Exception {
+
+            // Prefer builder-based construction: Jackson 3 requires configuration to be applied
+            // on the MapperBuilder before build(), including the date format.
+            Object newMapper = tryBuildViaJsonMapperBuilder(jacksonPrefix);
+
+            if (newMapper == null) {
+                // Fallback: direct ObjectMapper instantiation for Jackson 3 versions that still
+                // allow mutable post-construction configuration.
+                final Class<?> mapperClass = ClassLoaderUtils.findClass(jacksonPrefix + ".databind.ObjectMapper");
+                if (mapperClass == null) {
+                    throw new ConfigurationException(
+                            "Cannot find ObjectMapper class for Jackson 3 at package prefix: " + jacksonPrefix);
+                }
+                newMapper = mapperClass.getDeclaredConstructor().newInstance();
+                safeInvokeVoid(newMapper, "findAndRegisterModules");
+                safeInvokeVoid(newMapper, "findAndAddModules");
+                safeConfigureFeature(newMapper, jacksonPrefix + ".databind.SerializationFeature",
+                        "WRITE_DATES_AS_TIMESTAMPS", false);
+                // setDateFormat was removed in Jackson 3; try it anyway for forward-compatibility.
+                try {
+                    newMapper.getClass().getMethod("setDateFormat", DateFormat.class)
+                            .invoke(newMapper, new JacksonThymeleafISO8601DateFormat());
+                } catch (final Exception ignored) {}
+            }
+
+            safeConfigureEscapeNonAscii(newMapper.getClass(), jacksonPrefix, newMapper);
+
+            this.mapper = newMapper;
+            this.writeValueMethod = this.mapper.getClass().getMethod("writeValue", Writer.class, Object.class);
+        }
+
+
+        private static Object tryBuildViaJsonMapperBuilder(final String jacksonPrefix) {
+            try {
+                // tools.jackson.databind.json.JsonMapper is the concrete entry point in Jackson 3.
+                // JsonMapper.builder() returns a MapperBuilder that accepts pre-build configuration.
+                final Class<?> jsonMapperClass =
+                        ClassLoaderUtils.findClass(jacksonPrefix + ".databind.json.JsonMapper");
+                if (jsonMapperClass == null) {
+                    return null;
+                }
+                final Object builder = jsonMapperClass.getMethod("builder").invoke(null);
+                final Class<?> builderClass = builder.getClass();
+
+                // Set ISO 8601 date format (with milliseconds + RFC 3339 colon timezone offset).
+                // MapperBuilder.defaultDateFormat(DateFormat) must be called before build().
+                // This is the critical call; if it fails the whole method returns null.
+                builderClass.getMethod("defaultDateFormat", DateFormat.class)
+                        .invoke(builder, new JacksonThymeleafISO8601DateFormat());
+
+                // Disable WRITE_DATES_AS_TIMESTAMPS so java.util.Date is rendered as a string.
+                // MapperBuilder.disable(SerializationFeature...) is a varargs method - best-effort.
+                try {
+                    final Class<?> serFeatureClass =
+                            ClassLoaderUtils.findClass(jacksonPrefix + ".databind.SerializationFeature");
+                    if (serFeatureClass != null) {
+                        final Object writeDatesFeature =
+                                getEnumConstant(serFeatureClass, "WRITE_DATES_AS_TIMESTAMPS");
+                        if (writeDatesFeature != null) {
+                            // Varargs reflection: the method takes SerializationFeature[], not SerializationFeature.
+                            final Object featureArray =
+                                    java.lang.reflect.Array.newInstance(serFeatureClass, 1);
+                            java.lang.reflect.Array.set(featureArray, 0, writeDatesFeature);
+                            builderClass.getMethod("disable", featureArray.getClass())
+                                    .invoke(builder, featureArray);
+                        }
+                    }
+                } catch (final Exception ignored) {}
+
+                // Register modules (e.g. JavaTimeModule for java.time.* types) - best-effort.
+                try {
+                    builderClass.getMethod("findAndAddModules").invoke(builder);
+                } catch (final Exception ignored) {}
+
+                return builderClass.getMethod("build").invoke(builder);
+
+            } catch (final Exception e) {
+                return null;
+            }
+        }
+
+
+        @Override
+        public void serializeValue(final Object object, final Writer writer) {
+            try {
+                // Buffer to a StringWriter so that Jackson closing the writer is harmless,
+                // and to allow post-processing for XSS-safe escaping of '/' and '&'.
+                final StringWriter sw = new StringWriter(256);
+                this.writeValueMethod.invoke(this.mapper, sw, object);
+                final String json = sw.toString();
+                // Escape '&' -> '\u0026' and '/' -> '\/' for the same XSS safety as the Jackson 2 path.
+                writer.write(json.replace("&", "\\u0026").replace("/", "\\/"));
+            } catch (final InvocationTargetException e) {
+                final Throwable cause = e.getCause() != null ? e.getCause() : e;
+                throw new TemplateProcessingException(
+                        "An exception was raised while trying to serialize object to JavaScript using Jackson 3",
+                        cause instanceof Exception ? (Exception) cause : e);
+            } catch (final Exception e) {
+                throw new TemplateProcessingException(
+                        "An exception was raised while trying to serialize object to JavaScript using Jackson 3", e);
+            }
+        }
+
+
+        private static void safeInvokeVoid(final Object instance, final String methodName) {
+            try {
+                instance.getClass().getMethod(methodName).invoke(instance);
+            } catch (final Exception ignored) {
+                // Best-effort configuration - not critical
+            }
+        }
+
+
+        private static void safeConfigureFeature(
+                final Object instance, final String featureClassName,
+                final String featureConstant, final boolean enable) {
+            try {
+                final Class<?> featureClass = ClassLoaderUtils.findClass(featureClassName);
+                if (featureClass == null) {
+                    return;
+                }
+                final Object featureValue = getEnumConstant(featureClass, featureConstant);
+                if (featureValue == null) {
+                    return;
+                }
+                // Try configure(Feature, boolean) first (available in both Jackson 2 and some Jackson 3 builds).
+                try {
+                    instance.getClass().getMethod("configure", featureClass, boolean.class)
+                            .invoke(instance, featureValue, enable);
+                    return;
+                } catch (final NoSuchMethodException ignored) {}
+                // Fall back to enable(Feature) / disable(Feature).
+                final String methodName = enable ? "enable" : "disable";
+                instance.getClass().getMethod(methodName, featureClass).invoke(instance, featureValue);
+            } catch (final Exception ignored) {
+                // Best-effort configuration - not critical
+            }
+        }
+
+
+        private static void safeConfigureEscapeNonAscii(
+                final Class<?> mapperClass, final String jacksonPrefix, final Object mapper) {
+            try {
+                // JsonWriteFeature.ESCAPE_NON_ASCII.mappedFeature() -> StreamWriteFeature instance
+                // Then: mapper.getFactory().configure(streamWriteFeature, true)
+                final Class<?> jsonWriteFeatureClass =
+                        ClassLoaderUtils.findClass(jacksonPrefix + ".core.json.JsonWriteFeature");
+                if (jsonWriteFeatureClass == null) {
+                    return;
+                }
+                final Object escapeNonAscii = getEnumConstant(jsonWriteFeatureClass, "ESCAPE_NON_ASCII");
+                if (escapeNonAscii == null) {
+                    return;
+                }
+                final Method mappedFeatureMethod = jsonWriteFeatureClass.getMethod("mappedFeature");
+                final Object streamWriteFeature = mappedFeatureMethod.invoke(escapeNonAscii);
+                if (streamWriteFeature == null) {
+                    return;
+                }
+                final Object factory = mapperClass.getMethod("getFactory").invoke(mapper);
+                factory.getClass()
+                        .getMethod("configure", streamWriteFeature.getClass(), boolean.class)
+                        .invoke(factory, streamWriteFeature, true);
+            } catch (final Exception ignored) {
+                // Best-effort configuration - not critical
+            }
+        }
+
+
+        private static Object getEnumConstant(final Class<?> enumClass, final String name) {
+            for (final Object constant : enumClass.getEnumConstants()) {
+                if (((Enum<?>) constant).name().equals(name)) {
+                    return constant;
+                }
+            }
+            return null;
+        }
+
+
+    }
 
 
 
@@ -374,6 +610,13 @@ public final class StandardJavaScriptSerializer implements IStandardJavaScriptSe
             }
             if (object instanceof Enum<?>) {
                 writeEnum(writer, object);
+                return;
+            }
+            // Java Records (Java 16+): must be checked before bean introspection because
+            // Introspector does not recognise record accessor methods (which follow no 'getX()' convention).
+            // Class.isRecord() is accessed via reflection to maintain Java 8 source compatibility.
+            if (isRecord(object.getClass())) {
+                writeRecord(writer, object);
                 return;
             }
             writeObject(writer, object);
@@ -574,6 +817,46 @@ public final class StandardJavaScriptSerializer implements IStandardJavaScriptSe
             }
         }
 
+
+
+        private static boolean isRecord(final Class<?> clazz) {
+            // Class.isRecord() was added in Java 16; use reflection to keep Java 8 source compatibility.
+            try {
+                return Boolean.TRUE.equals(Class.class.getMethod("isRecord").invoke(clazz));
+            } catch (final NoSuchMethodException ignored) {
+                return false; // Running on Java < 16
+            } catch (final Exception ignored) {
+                return false;
+            }
+        }
+
+
+        private static void writeRecord(final Writer writer, final Object object) throws IOException {
+            // Class.getRecordComponents() and RecordComponent.getName()/getAccessor() added in Java 16.
+            // All accessed via reflection to maintain Java 8 source compatibility.
+            try {
+                final Object[] components =
+                        (Object[]) Class.class.getMethod("getRecordComponents").invoke(object.getClass());
+                if (components == null || components.length == 0) {
+                    writeMap(writer, new LinkedHashMap<String, Object>(0));
+                    return;
+                }
+                final Map<String, Object> properties = new LinkedHashMap<String, Object>(components.length + 1, 1.0f);
+                for (final Object component : components) {
+                    final Class<?> componentClass = component.getClass();
+                    final String name = (String) componentClass.getMethod("getName").invoke(component);
+                    final Method accessor = (Method) componentClass.getMethod("getAccessor").invoke(component);
+                    properties.put(name, accessor.invoke(object));
+                }
+                writeMap(writer, properties);
+            } catch (final InvocationTargetException e) {
+                throw new IllegalArgumentException(
+                        "Could not read record components of class " + object.getClass().getName(), e.getCause());
+            } catch (final Exception e) {
+                throw new IllegalArgumentException(
+                        "Could not read record components of class " + object.getClass().getName(), e);
+            }
+        }
 
 
         private static void writeEnum(final Writer writer, final Object object) throws IOException {

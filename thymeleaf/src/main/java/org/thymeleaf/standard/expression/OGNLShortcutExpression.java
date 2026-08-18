@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -157,7 +157,7 @@ final class OGNLShortcutExpression {
             throws OgnlException {
 
         if (OGNLContextPropertyAccessor.REQUEST_PARAMETERS_RESTRICTED_VARIABLE_NAME.equals(propertyName) &&
-                context != null && context.containsKey(OGNLContextPropertyAccessor.RESTRICT_REQUEST_PARAMETERS)) {
+                context != null && context.containsKey(OGNLContextPropertyAccessor.RESTRICT_EXPRESSION_OBJECTS)) {
             throw new OgnlException(
                     "Access to variable \"" + propertyName + "\" is forbidden in this context. Note some restrictions apply to " +
                     "variable access. For example, accessing request parameters is forbidden in preprocessing and " +

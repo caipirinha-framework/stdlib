@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -227,6 +227,11 @@ import org.thymeleaf.util.Validate;
  *
  */
 public class TemplateEngine implements ITemplateEngine {
+
+    // Done here only to make sure that it is initialized at startup and doesn't cause blocking
+    // in reactive event loops later
+    static final String THYMELEAF_VERSION = Thymeleaf.getVersion();
+    static final String THYMELEAF_BUILD_TIMESTAMP = Thymeleaf.getBuildTimestamp();
 
     /**
      * <p>

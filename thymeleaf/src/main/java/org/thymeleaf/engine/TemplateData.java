@@ -1,7 +1,7 @@
 /*
  * =============================================================================
  *
- *   Copyright (c) 2011-2018, The THYMELEAF team (http://www.thymeleaf.org)
+ *   Copyright (c) 2011-2026 Thymeleaf (http://www.thymeleaf.org)
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -72,8 +72,8 @@ public final class TemplateData {
      *   Builds a new {@code TemplateData} object.
      * </p>
      * <p>
-     *   This constructor should be considered internal, as there should be no reason why
-     *   instances of this class should be created from outside the Template Engine itself.
+     *   This constructor should be considered internal, though offered as
+     *   public to be used in testing scenarios.
      * </p>
      *
      * @param template the template
@@ -81,7 +81,7 @@ public final class TemplateData {
      * @param templateResource the template resource
      * @param templateMode the template mode
      */
-    TemplateData(
+    public TemplateData(
             final String template,
             final Set<String> templateSelectors,
             final ITemplateResource templateResource,

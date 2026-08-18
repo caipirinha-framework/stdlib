@@ -42,7 +42,7 @@ git push
 ## 4. Create and deploy the release into the staging repositories
 
 ```shell
-mvn clean compile deploy
+mvn -P releases clean compile deploy
 ```
 
 ## 5. Create tag and set to new development version
@@ -51,7 +51,7 @@ mvn clean compile deploy
 mvn scm:tag -Dtag=thymeleaf-X.Y.Z
 mvn versions:set -DprocessAllModules=true -DnewVersion=X.Y.[Z+1]-SNAPSHOT
 mvn versions:commit
-git add .;
+git add .
 git commit -m "Prepare for next development iteration"
 git push
 ```
@@ -64,5 +64,16 @@ back to SNAPSHOT versions wherever needed and commit.
 ## 7. Manage staging repository in Central
 
 Follow instructions at https://central.sonatype.org/publish/publish-guide/
+
+## 8. Releasing distribution artifacts
+
+Once jar artifacts have been published in Maven Central, the .zip distribution release
+generated in dist/target should be uploaded to the GitHub repository as a new release
+along with a gpg signature (.asc) generated with:
+
+```shell
+gpg -ab --default-key key_ID_for_releases@thymeleaf.org thymeleaf-X.Y.Z-dist.zip
+```
+
 
 
