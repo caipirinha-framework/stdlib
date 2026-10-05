@@ -355,10 +355,13 @@ public class WQConstraint extends WQConstraintLine
 
 				if (function.hasBinaryParam())
 				{
-					final String[] splitValues = StringUtils.split(value, "..", 2);
+					final int separator = value.indexOf("..");
 
-					final String left = splitValues[0];
-					final String right = splitValues[1];
+					if (separator <= 0 || separator + 2 >= value.length())
+						throw new IllegalArgumentException("Range constraint for " + field + " requires two endpoints separated by '..'");
+
+					final String left = value.substring(0, separator);
+					final String right = value.substring(separator + 2);
 
 					return new WQConstraint(field, function, left, right);
 				}
