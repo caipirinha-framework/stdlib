@@ -16,10 +16,16 @@ import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
-import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
+import javax.naming.ldap.Control;
+import javax.naming.ldap.InitialLdapContext;
+import javax.naming.ldap.LdapContext;
+import javax.naming.ldap.PagedResultsControl;
+import javax.naming.ldap.PagedResultsResponseControl;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -52,6 +58,12 @@ public class LDAPSearchService
 	@Doc("The LDAP read timeout - sets com.sun.jndi.ldap.read.timeout (default Integer.MIN_VALUE which leaves at default)")
 	@Reconfigurable
 	public long ldapReadTimeout = Integer.MIN_VALUE;
+
+	@Inject(optional = true)
+	@Named("ldap.page-size")
+	@Doc("LDAP search page size (default 500). Zero to disable paging.")
+	@Reconfigurable
+	public int ldapPageSize = 500;
 
 	@Inject
 	@Named("ldap.search-base")
@@ -134,32 +146,22 @@ public class LDAPSearchService
 	 *
 	 * @param ldap
 	 * @param dn
-	 *
 	 * @return
-	 *
 	 * @throws NamingException
 	 */
-	private List<LDAPGroup> getGroups(final DirContext ldap, final String dn) throws NamingException
+	private List<LDAPGroup> getGroups(final LdapContext ldap, final String dn) throws NamingException
 	{
-		// Get the DN of all grouos the user is directly/indirectly a member of
-		final NamingEnumeration<SearchResult> answer;
-		{
-			SearchControls search = new SearchControls();
+		SearchControls search = new SearchControls();
+		search.setSearchScope(SearchControls.SUBTREE_SCOPE);
+		search.setReturningAttributes(new String[]{"dn"});
 
-			search.setSearchScope(SearchControls.SUBTREE_SCOPE);
-			search.setReturningAttributes(new String[]{"dn"});
-
-			final String searchFilter = String.format(this.ldapGroupFilter, escapeLdapSearchFilterValue(dn));
-
-			answer = executeLdapSearch(ldap, search, searchFilter);
-		}
+		final String searchFilter = String.format(this.ldapGroupFilter, escapeLdapSearchFilterValue(dn));
+		final List<SearchResult> answer = executePagedLdapSearch(ldap, search, searchFilter);
 
 		List<LDAPGroup> groups = new ArrayList<>();
 
-		while (answer.hasMoreElements())
+		for (SearchResult sr : answer)
 		{
-			SearchResult sr = answer.next();
-
 			final String groupDN = sr.getNameInNamespace();
 
 			groups.add(dnToLdapGroup(groupDN));
@@ -224,7 +226,7 @@ public class LDAPSearchService
 
 		try
 		{
-			DirContext ldapContext = null;
+			LdapContext ldapContext = null;
 			try
 			{
 				Hashtable<String, String> ldapEnv = new Hashtable<>();
@@ -236,30 +238,24 @@ public class LDAPSearchService
 				if (ldapReadTimeout != Integer.MIN_VALUE)
 					ldapEnv.put("com.sun.jndi.ldap.read.timeout", Long.toString(ldapReadTimeout)); // 90 seconds
 
-				ldapContext = new InitialDirContext(ldapEnv); // N.B. sometimes takes ~10 seconds
+				ldapContext = new InitialLdapContext(ldapEnv, null); // N.B. sometimes takes ~10 seconds
 
 				Map<LDAPUser, LDAPUserRecord> results = new HashMap<>();
 
 				// Run a separate search for each user
 				for (LDAPUser searchFor : searchForAll)
 				{
-					final NamingEnumeration<SearchResult> answer;
-					{
-						SearchControls search = new SearchControls();
+					SearchControls search = new SearchControls();
+					search.setSearchScope(SearchControls.SUBTREE_SCOPE);
+					search.setReturningAttributes(new String[]{"dn", "name", "samAccountName"});
 
-						search.setSearchScope(SearchControls.SUBTREE_SCOPE);
-						search.setReturningAttributes(new String[]{"dn", "name", "samAccountName"});
-
-						final String searchFilter = String.format(this.ldapFilter, escapeLdapSearchFilterValue(searchFor.username));
-
-						answer = executeLdapSearch(ldapContext, search, searchFilter);
-					}
+					final String searchFilter = String.format(this.ldapFilter, escapeLdapSearchFilterValue(searchFor.username));
+					final List<SearchResult> answer = executePagedLdapSearch(ldapContext, search, searchFilter);
 
 					LDAPUserRecord record = null;
 
-					while (answer.hasMoreElements())
+					for (SearchResult sr : answer)
 					{
-						SearchResult sr = answer.next();
 						Attributes attrs = sr.getAttributes();
 
 						final String dn = sr.getNameInNamespace();
@@ -305,6 +301,95 @@ public class LDAPSearchService
 	}
 
 
+	/**
+	 * Collect the complete search before callers use it to replace role data. In particular, hasMore() must be used:
+	 * hasMoreElements() suppresses deferred LDAP errors and can make a partial answer look complete.
+	 */
+	List<SearchResult> executePagedLdapSearch(final LdapContext ldapContext,
+	                                          final SearchControls search,
+	                                          final String searchFilter)
+	{
+		final int pageSize = ldapPageSize;
+
+		try
+		{
+			final Control[] originalControls = ldapContext.getRequestControls();
+			try
+			{
+				byte[] cookie = null;
+				final List<SearchResult> results = new ArrayList<>();
+
+				do
+				{
+					if (pageSize > 0)
+					{
+						Control[] controls = originalControls == null ?
+						                     new Control[1] :
+						                     Arrays.copyOf(originalControls, originalControls.length + 1);
+						controls[controls.length - 1] = new PagedResultsControl(pageSize, cookie, Control.CRITICAL);
+						ldapContext.setRequestControls(controls);
+					}
+
+					results.addAll(readSearchPage(ldapContext, search, searchFilter));
+					cookie = pageSize > 0 ? getNextPageCookie(ldapContext) : null;
+				}
+				while (cookie != null && cookie.length > 0);
+
+				return results;
+			}
+			finally
+			{
+				// Restore context for next request (User/Group lookups share context)
+				ldapContext.setRequestControls(originalControls);
+			}
+		}
+		catch (NamingException | IOException e)
+		{
+			throw new LDAPSearchException("Error collecting complete LDAP search filter '" +
+			                              searchFilter +
+			                              "', base DN '" +
+			                              ldapSearchBase +
+			                              "': " +
+			                              e.getMessage(), e);
+		}
+	}
+
+
+	private List<SearchResult> readSearchPage(final LdapContext ldapContext,
+	                                          final SearchControls search,
+	                                          final String searchFilter) throws NamingException
+	{
+		final NamingEnumeration<SearchResult> answer = executeLdapSearch(ldapContext, search, searchFilter);
+
+		try
+		{
+			final List<SearchResult> results = new ArrayList<>();
+
+			while (answer.hasMore())
+				results.add(answer.next());
+
+			return results;
+		}
+		finally
+		{
+			answer.close();
+		}
+	}
+
+
+	private byte[] getNextPageCookie(final LdapContext ldapContext) throws NamingException
+	{
+		final Control[] controls = ldapContext.getResponseControls();
+
+		if (controls != null)
+			for (Control control : controls)
+				if (control instanceof PagedResultsResponseControl pc)
+					return pc.getCookie();
+
+		throw new NamingException("LDAP server missingpaged results response control");
+	}
+
+
 	public NamingEnumeration<SearchResult> executeLdapSearch(final DirContext ldapContext,
 	                                                         final SearchControls search,
 	                                                         final String searchFilter) throws LDAPSearchException
@@ -312,11 +397,7 @@ public class LDAPSearchService
 		try
 		{
 			log.trace("LDAP Search: base='{}', filter='{}'", ldapSearchBase, searchFilter);
-			final NamingEnumeration<SearchResult> answer = ldapContext.search(ldapSearchBase, searchFilter, search);
-
-			log.trace("LDAP Search returned results: {}", (answer == null) ? false : answer.hasMore());
-
-			return answer;
+			return ldapContext.search(ldapSearchBase, searchFilter, search);
 		}
 		catch (NamingException e)
 		{
@@ -361,9 +442,7 @@ public class LDAPSearchService
 	 * injection by ensuring that filter metacharacters present in the value are treated as literal characters rather than as
 	 * filter syntax.
 	 *
-	 * @param value
-	 * 		the raw (untrusted) value to be placed into a filter assertion value
-	 *
+	 * @param value the raw (untrusted) value to be placed into a filter assertion value
 	 * @return the escaped value (a normal value with no metacharacters is returned unchanged)
 	 */
 	static String escapeLdapSearchFilterValue(final String value)
