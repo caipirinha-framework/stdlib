@@ -44,7 +44,7 @@
 		<moxy.version>2.7.16</moxy.version>
 		<mockito.version>5.24.0</mockito.version>
 		<jackson.version>2.17.1</jackson.version>
-		<ognl.version>3.3.4</ognl.version>
+		<ognl.version>3.4.16</ognl.version>
 	</properties>
 
 	<scm>
