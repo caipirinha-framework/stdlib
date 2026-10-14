@@ -125,7 +125,7 @@ public class TimecodeComparator implements Comparator<Timecode>
 	 *
 	 * @return
 	 */
-	public static Timecode max(final Timecode... timecodes)
+	public static Timecode maxTimecode(final Timecode... timecodes)
 	{
 		Timecode max = null;
 
@@ -145,7 +145,7 @@ public class TimecodeComparator implements Comparator<Timecode>
 	 *
 	 * @return
 	 */
-	public static Timecode min(final Timecode... timecodes)
+	public static Timecode minTimecode(final Timecode... timecodes)
 	{
 		Timecode min = null;
 

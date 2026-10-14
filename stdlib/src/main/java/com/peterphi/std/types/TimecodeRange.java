@@ -182,8 +182,8 @@ public class TimecodeRange
 	 */
 	public static TimecodeRange merge(TimecodeRange a, TimecodeRange b)
 	{
-		final Timecode start = TimecodeComparator.min(a.getStart(), b.getStart());
-		final Timecode end = TimecodeComparator.max(a.getEnd(), b.getEnd());
+		final Timecode start = TimecodeComparator.minTimecode(a.getStart(), b.getStart());
+		final Timecode end = TimecodeComparator.maxTimecode(a.getEnd(), b.getEnd());
 
 		return new TimecodeRange(start, end);
 	}

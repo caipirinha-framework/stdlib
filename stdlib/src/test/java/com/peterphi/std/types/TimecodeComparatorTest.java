@@ -77,7 +77,7 @@ public class TimecodeComparatorTest
 	@Test
 	public void testMin()
 	{
-		Timecode min = TimecodeComparator.min(Timecode.getInstance("00:00:00:00@25"),
+		Timecode min = TimecodeComparator.minTimecode(Timecode.getInstance("00:00:00:00@25"),
 		                                      Timecode.getInstance("-10:10:10:10@25"),
 		                                      Timecode.getInstance("-10:00:00:00@25"),
 		                                      Timecode.getInstance("-09:09:09:09@25"),
@@ -90,7 +90,7 @@ public class TimecodeComparatorTest
 	@Test
 	public void testMax()
 	{
-		Timecode max = TimecodeComparator.max(Timecode.getInstance("00:00:00:00@25"),
+		Timecode max = TimecodeComparator.maxTimecode(Timecode.getInstance("00:00:00:00@25"),
 		                                      Timecode.getInstance("-10:10:10:10@25"),
 		                                      Timecode.getInstance("-10:00:00:00@25"),
 		                                      Timecode.getInstance("-09:09:09:09@25"),
