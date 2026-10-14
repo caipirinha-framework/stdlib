@@ -16,6 +16,8 @@ jobs:
             release: 21
           - java: 25
             release: 25
+          - java: 27
+            release: 27
 
     runs-on: ubuntu-latest
     env:
