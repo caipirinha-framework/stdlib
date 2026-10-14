@@ -36,12 +36,13 @@
 		<guice.version>6.0.0</guice.version>
 		<metrics.version>4.1.18</metrics.version>
 		<resteasy.version>5.0.9.Final</resteasy.version>
-		<javassist.version>3.30.2-GA</javassist.version>
+		<javassist.version>3.33.0-GA</javassist.version>
+		<bytebuddy.version>1.17.7</bytebuddy.version>
 		<hibernate.version>5.4.33.Final</hibernate.version>
 		<dbunit.version>2.8.0</dbunit.version>
 		<hsqldb.version>2.7.3</hsqldb.version>
-		<moxy.version>2.7.14</moxy.version>
-		<mockito.version>2.28.2</mockito.version>
+		<moxy.version>2.7.16</moxy.version>
+		<mockito.version>5.24.0</mockito.version>
 		<jackson.version>2.17.1</jackson.version>
 		<ognl.version>3.3.4</ognl.version>
 	</properties>
@@ -76,6 +77,17 @@
 
 	<dependencyManagement>
 		<dependencies>
+			<!-- Hibernate/Mockito have different Byte Buddy versions, align them -->
+			<dependency>
+				<groupId>net.bytebuddy</groupId>
+				<artifactId>byte-buddy</artifactId>
+				<version>${bytebuddy.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>net.bytebuddy</groupId>
+				<artifactId>byte-buddy-agent</artifactId>
+				<version>${bytebuddy.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>joda-time</groupId>
 				<artifactId>joda-time</artifactId>
@@ -210,8 +222,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.13.0</version>
 				<configuration>
-					<source>${javalang.version}</source>
-					<target>${javalang.version}</target>
+					<release>${javalang.version}</release>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
