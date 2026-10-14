@@ -149,9 +149,8 @@ public final class OGNLVariableExpressionEvaluator
 
                 // The IExpressionObjects implementation returned by processing contexts that include the Standard
                 // Dialects will be lazy in the creation of expression objects (i.e. they won't be created until really
-                // needed). And in order for this behaviour to be accepted by OGNL, we will be wrapping this object
-                // inside an implementation of Map<String,Object>, which will afterwards be fed to the constructor
-                // of an OgnlContext object.
+                // needed). We wrap these objects in a Map<String,Object>, which executeExpression adapts to an
+                // OgnlContext while preserving lazy expression-object lookup.
 
                 // Note this will never happen with shortcut expressions, as the '#' character with which all
                 // expression object names start is not allowed by the OGNLShortcutExpression parser.
@@ -347,9 +346,35 @@ public final class OGNLVariableExpressionEvaluator
             return ((OGNLShortcutExpression) parsedExpression).evaluate(configuration, context, root);
         }
 
-        // We create the OgnlContext here instead of just sending the Map as context because that prevents OGNL from
-        // creating the OgnlContext empty and then setting the context Map variables one by one
-        final OgnlContext ognlContext = new OgnlContext(MEMBER_ACCESS, CLASS_RESOLVER, null, context);
+        // OGNL 3.4 copies context values. Keep expression objects lazy so unused objects
+        // are not built and restricted objects are checked only when accessed.
+        final OgnlContext ognlContext;
+        if (context instanceof OGNLExpressionObjectsWrapper) {
+            ognlContext = new OgnlContext(MEMBER_ACCESS, CLASS_RESOLVER, null, null) {
+                @Override
+                public Object get(final Object key) {
+                    final Object value = super.get(key);
+                    return value != null || super.containsKey(key) ? value : context.get(key);
+                }
+
+                @Override
+                public boolean containsKey(final Object key) {
+                    return super.containsKey(key) || context.containsKey(key);
+                }
+
+                @Override
+                public Object put(final String key, final Object value) {
+                    // Preserve the wrapper's protection against replacing expression objects.
+                    // OGNL itself handles root and this as reserved context variables.
+                    if (!"root".equals(key) && !"this".equals(key)) {
+                        context.put(key, value);
+                    }
+                    return super.put(key, value);
+                }
+            };
+        } else {
+            ognlContext = new OgnlContext(MEMBER_ACCESS, CLASS_RESOLVER, null, null).withValues(context);
+        }
         return ognl.Ognl.getValue(parsedExpression, ognlContext, root);
 
     }
@@ -407,7 +432,7 @@ public final class OGNLVariableExpressionEvaluator
         }
 
         @Override
-        public Class<?> classForName(final String className, final Map context) throws ClassNotFoundException {
+        public Class<?> classForName(final String className, final OgnlContext context) throws ClassNotFoundException {
             if (ExpressionUtils.isTypeForbidden(className)) {
                 throw new TemplateProcessingException(
                         String.format(
@@ -433,7 +458,7 @@ public final class OGNLVariableExpressionEvaluator
             super();
         }
 
-        public Class classForName(final String className, final Map context) throws ClassNotFoundException {
+        public Class classForName(final String className, final OgnlContext context) throws ClassNotFoundException {
             Class result = this.classes.get(className);
             if (result != null) {
                 return result;
@@ -461,7 +486,7 @@ public final class OGNLVariableExpressionEvaluator
         }
 
         @Override
-        public boolean isAccessible(final Map context, final Object target, final Member member, final String propertyName) {
+        public boolean isAccessible(final OgnlContext context, final Object target, final Member member, final String propertyName) {
             int modifiers = member.getModifiers();
             if (!Modifier.isPublic(modifiers)) {
                 return false;
