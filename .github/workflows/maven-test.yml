@@ -1,10 +1,21 @@
-name: JDK21 Build and Test
+name: JDK Build and Test
 
 on: [ push, pull_request ]
 
 
 jobs:
   build:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - java: 21
+            release: 21
+          - java: 25
+            release: 21
+          - java: 25
+            release: 25
 
     runs-on: ubuntu-latest
     env:
@@ -16,10 +27,10 @@ jobs:
       uses: zcong1993/setup-timezone@f28e5fb1ca95077c81b67be53bcd1923de2175ed
       with:
         timezone: Europe/London
-    - name: Set up JDK 21
+    - name: Set up JDK ${{ matrix.java }}
       uses: actions/setup-java@v2
       with:
-        java-version: 21
+        java-version: ${{ matrix.java }}
         distribution: zulu
  # Step that does that actual cache save and restore
     - uses: actions/cache@v4.2.2
@@ -29,7 +40,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
     - name: Build with Maven
-      run: mvn -T3 -B test --file pom.xml
+      run: mvn -T3 -B clean verify -Djavalang.version=${{ matrix.release }} --file pom.xml
     - name: Publish Test Report
       if: ${{ always() }}
       uses: scacap/action-surefire-report@1a128e49c0585bc0b8e38e541ac3b6e35a5bc727
