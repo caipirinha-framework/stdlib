@@ -77,6 +77,12 @@
 
 	<dependencyManagement>
 		<dependencies>
+			<!-- Support Java 27 bytecode while retaining MOXy's javax.xml.bind API -->
+			<dependency>
+				<groupId>org.eclipse.persistence</groupId>
+				<artifactId>org.eclipse.persistence.asm</artifactId>
+				<version>9.10.0</version>
+			</dependency>
 			<!-- Hibernate/Mockito have different Byte Buddy versions, align them -->
 			<dependency>
 				<groupId>net.bytebuddy</groupId>
