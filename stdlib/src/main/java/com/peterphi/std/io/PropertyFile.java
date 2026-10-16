@@ -9,7 +9,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,7 +16,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -82,7 +80,6 @@ public class PropertyFile
 	 *
 	 * @param classloader
 	 * @param fileNames
-	 *
 	 * @return
 	 */
 	public static PropertyFile find(final ClassLoader classloader, final String... fileNames)
@@ -201,7 +198,6 @@ public class PropertyFile
 	 * Find all property files by the name <code>name</code> by searching the classloader that owns PropertyFile
 	 *
 	 * @param name
-	 *
 	 * @return
 	 */
 	public static PropertyFile[] findAll(final String name)
@@ -215,7 +211,6 @@ public class PropertyFile
 	 *
 	 * @param loader
 	 * @param name
-	 *
 	 * @return
 	 */
 	public static PropertyFile[] findAll(ClassLoader loader, final String name)
@@ -423,21 +418,18 @@ public class PropertyFile
 
 	public void load(Properties p)
 	{
-		try
+		entries.clear();
+		vars.clear();
+
+		// Properties already contains decoded strings
+		for (String name : p.stringPropertyNames())
 		{
-			StringWriter sw = new StringWriter();
-			p.store(sw, null);
-
-			StringBuffer sb = sw.getBuffer();
-
-			StringReader sr = new StringReader(sb.toString());
-
-			load(sr);
+			NameValuePair nvp = new NameValuePair(name, p.getProperty(name));
+			entries.add(nvp);
+			vars.put(caseSensitive ? name : name.toLowerCase(), nvp);
 		}
-		catch (IOException e)
-		{
-			throw new IOError(e);
-		}
+
+		hook_loaded();
 	}
 
 
@@ -497,6 +489,7 @@ public class PropertyFile
 	// ///////////////////////////////
 	// MANIPULATION
 	// ////////////////////////////
+
 
 	/**
 	 * Make this PropertyFile object read-only
@@ -896,13 +889,9 @@ public class PropertyFile
 	 * Creates a read-only version of a property file<br />
 	 * Fails if the file does not exist.
 	 *
-	 * @param filename
-	 * 		the filename to load
-	 *
+	 * @param filename the filename to load
 	 * @return
-	 *
-	 * @throws IOException
-	 * 		if the file cannot be loaded
+	 * @throws IOException if the file cannot be loaded
 	 */
 	public static PropertyFile readOnly(final File filename) throws IOException
 	{
@@ -916,7 +905,8 @@ public class PropertyFile
 
 	////////////////////////////////////
 	// Property File entry types
-	////////////////////////////////////
+
+	/// /////////////////////////////////
 
 
 	protected abstract class Entry
