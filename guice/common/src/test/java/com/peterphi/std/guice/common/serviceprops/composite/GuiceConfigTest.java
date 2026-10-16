@@ -2,6 +2,8 @@ package com.peterphi.std.guice.common.serviceprops.composite;
 
 import org.junit.Test;
 
+import java.util.Properties;
+
 import static org.junit.Assert.assertEquals;
 
 public class GuiceConfigTest
@@ -48,5 +50,19 @@ public class GuiceConfigTest
 		props.set("name", "a-${var}-b");
 		assertEquals("getRaw", "a-${var}-b", props.getRaw("name", null));
 		assertEquals("get", "a-123-b", props.get("name", null));
+	}
+
+
+	@Test
+	public void testSetAllPropertiesPreservesLoggingPattern()
+	{
+		Properties properties = new Properties();
+		String name = "log4j.appender.logconsole.layout.ConversionPattern";
+		String pattern = "%-5p %d: café = #! %m%n";
+		properties.setProperty(name, pattern);
+
+		props.setAll(properties);
+
+		assertEquals(pattern, props.get(name, null));
 	}
 }
