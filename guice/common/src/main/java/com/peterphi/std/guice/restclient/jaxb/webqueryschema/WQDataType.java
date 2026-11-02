@@ -1,7 +1,7 @@
 package com.peterphi.std.guice.restclient.jaxb.webqueryschema;
 
-import javax.xml.bind.annotation.XmlEnum;
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlEnum;
+import jakarta.xml.bind.annotation.XmlType;
 
 @XmlEnum
 @XmlType(name = "DataType")

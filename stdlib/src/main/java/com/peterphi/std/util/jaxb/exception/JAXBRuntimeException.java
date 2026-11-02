@@ -1,6 +1,6 @@
 package com.peterphi.std.util.jaxb.exception;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 /**
  * A RuntimeException version of a JAXBException

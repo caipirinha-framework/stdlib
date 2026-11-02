@@ -1,10 +1,27 @@
 package com.peterphi.std.guice.hibernate.webquery.impl;
 
+import com.google.common.reflect.TypeToken;
 import com.peterphi.std.guice.database.annotation.EagerFetch;
 import com.peterphi.std.guice.database.annotation.WebQueryPrivate;
 import com.peterphi.std.guice.hibernate.webquery.impl.exception.InvalidPropertyException;
 import com.peterphi.std.guice.hibernate.webquery.impl.exception.PrivatePropertyUseRejected;
 import com.peterphi.std.guice.restclient.jaxb.webqueryschema.WQEntitySchema;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Subgraph;
+import jakarta.persistence.Table;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.EmbeddableType;
+import jakarta.persistence.metamodel.EntityType;
+import jakarta.persistence.metamodel.PluralAttribute;
+import jakarta.persistence.metamodel.SingularAttribute;
+import jakarta.persistence.metamodel.Type;
 import org.apache.commons.lang.StringUtils;
 import org.hibernate.Session;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -13,22 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Subgraph;
-import javax.persistence.Table;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.EmbeddableType;
-import javax.persistence.metamodel.EntityType;
-import javax.persistence.metamodel.PluralAttribute;
-import javax.persistence.metamodel.SingularAttribute;
-import javax.persistence.metamodel.Type;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
@@ -294,7 +295,7 @@ public class QEntity
 	                         final Attribute<?, ?> attribute)
 	{
 		final String name = attribute.getName();
-		//final javax.persistence.metamodel.Type<?> type;
+		//final jakarta.persistence.metamodel.Type<?> type;
 		final Class<?> clazz;
 		final boolean isCollection;
 		final boolean nullable;
@@ -327,8 +328,32 @@ public class QEntity
 		{
 			isCollection = false;
 			//type = attribute.getDeclaringType();
-			nullable = attribute instanceof SingularAttribute sa && sa.isOptional();
-			clazz = attribute.getJavaType();
+			nullable = attribute instanceof SingularAttribute<?,?> sa && sa.isOptional();
+
+			final Class<?> baseJavaType = attribute.getJavaType();
+
+			if (baseJavaType == Enum.class) {
+				// Hibernate has unhelpfully told us this is an enum without giving us the underlying type
+				// We need to inspect the Member to figure out the actual Java type
+				if (attribute.getJavaMember() instanceof Method m)
+				{
+					clazz = TypeToken.of(this.clazz).resolveType(m.getGenericReturnType()).getRawType();
+				}
+				else if (attribute.getJavaMember() instanceof Field f)
+				{
+					clazz = TypeToken.of(this.clazz).resolveType(f.getGenericType()).getRawType();
+				}
+				else {
+					throw new IllegalArgumentException("Unsupported member type: " + attribute.getJavaMember().getClass());
+				}
+
+				// A raw Enum without a concrete type cannot be represented in a WebQuery schema.
+				if (clazz == Enum.class)
+					throw new IllegalArgumentException("Encountered Enum type without further type information, cannot proceed. " + attribute.getJavaMember());
+			}
+			else {
+				clazz = baseJavaType;
+			}
 		}
 
 		// TODO is it also meaningful to add the parent composite type as a field too?
@@ -443,7 +468,6 @@ public class QEntity
 				newPrefix = prefix + ":" + name;
 			else
 				newPrefix = name;
-
 
 			properties.put(newPrefix, new QProperty(this, prefix, name, clazz, nullable, privateField));
 		}

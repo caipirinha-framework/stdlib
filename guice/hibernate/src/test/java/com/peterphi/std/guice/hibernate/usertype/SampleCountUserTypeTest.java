@@ -18,7 +18,7 @@ public class SampleCountUserTypeTest
 	@Test
 	public void testSqlTypes() throws Exception
 	{
-		assertEquals(Types.VARCHAR, svc.sqlTypes()[0]);
+		assertEquals(Types.VARCHAR, svc.getSqlType());
 	}
 
 

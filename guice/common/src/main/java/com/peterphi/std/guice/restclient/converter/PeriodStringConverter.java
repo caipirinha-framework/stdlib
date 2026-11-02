@@ -2,8 +2,8 @@ package com.peterphi.std.guice.restclient.converter;
 
 import org.joda.time.Period;
 
-import javax.ws.rs.ext.ParamConverter;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.ParamConverter;
+import jakarta.ws.rs.ext.Provider;
 
 @Provider
 class PeriodStringConverter implements ParamConverter<Period>

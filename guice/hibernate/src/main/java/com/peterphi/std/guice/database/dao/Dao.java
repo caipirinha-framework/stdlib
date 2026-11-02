@@ -103,7 +103,7 @@ public interface Dao<T, ID extends Serializable>
 	 *
 	 * @return the item (or null if it is not present)
 	 *
-	 * @see org.hibernate.Session#get(Class, java.io.Serializable)
+	 * @see jakarta.persistence.EntityManager#find(Class, Object)
 	 */
 	public T getById(ID id);
 
@@ -138,39 +138,18 @@ public interface Dao<T, ID extends Serializable>
 	 * @param obj
 	 * 		the entity
 	 *
-	 * @see org.hibernate.Session#delete(Object)
+	 * @see org.hibernate.Session#remove(Object)
 	 */
 	public void delete(T obj);
 
 	/**
-	 * Create or Update an item in the database
+	 * Copy an entity's state into the persistence context. The supplied detached entity stays detached.
+	 * Use {@link #merge(Object)} and its return value when subsequent changes must be tracked.
 	 *
 	 * @param obj
 	 * 		the entity
 	 *
-	 * @see org.hibernate.Session#saveOrUpdate(Object)
-	 */
-	public void saveOrUpdate(T obj);
-
-	/**
-	 * Save a new item in the database, returning its primary key
-	 *
-	 * @param obj
-	 * 		the entity
-	 *
-	 * @return the primary key of the newly saved object
-	 *
-	 * @see org.hibernate.Session#save(Object)
-	 */
-	public ID save(T obj);
-
-	/**
-	 * Update an existing item in the database
-	 *
-	 * @param obj
-	 * 		the entity
-	 *
-	 * @see org.hibernate.Session#update(Object)
+	 * @see org.hibernate.Session#merge(Object)
 	 */
 	public void update(T obj);
 
@@ -180,11 +159,23 @@ public interface Dao<T, ID extends Serializable>
 	 * @param obj
 	 * 		the entity
 	 *
-	 * @return a Hibernate entity version of obj
+	 * @return the managed entity; subsequent changes must be made to this returned instance
 	 *
 	 * @see org.hibernate.Session#merge(Object)
 	 */
 	public T merge(T obj);
+
+
+	/**
+	 * Make a new entity managed in the current transaction. SQL may be deferred until flush,
+	 * though IDENTITY identifiers can require an immediate insert.
+	 *
+	 * @param obj
+	 * 		the entity
+	 *
+	 * @see org.hibernate.Session#persist(Object)
+	 */
+	void persist(T obj);
 
 
 	/**

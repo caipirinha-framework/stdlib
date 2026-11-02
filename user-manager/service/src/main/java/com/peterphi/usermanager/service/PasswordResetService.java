@@ -62,7 +62,7 @@ public class PasswordResetService
 		newResetCode.setId(hash(code.toCharArray()));
 		newResetCode.setUser(entity);
 
-		dao.save(newResetCode);
+		dao.persist(newResetCode);
 
 		dao.deleteExpired();
 

@@ -1,14 +1,15 @@
 package com.peterphi.std.guice.restclient.resteasy.impl.jackson;
 
-import com.fasterxml.jackson.jaxrs.cfg.Annotations;
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+
+import com.fasterxml.jackson.jakarta.rs.cfg.Annotations;
+import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
 import com.google.inject.Inject;
 import com.peterphi.std.guice.common.jackson.JacksonFactory;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.ext.Provider;
 import org.jboss.resteasy.core.messagebody.AsyncBufferedMessageBodyWriter;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.ext.Provider;
 
 @Provider
 @Consumes({"application/json", "application/*+json", "text/json"})

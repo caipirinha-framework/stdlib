@@ -35,11 +35,11 @@ public class LargeTableQueryTest
 	@Transactional
 	public void testSearchForPrimaryKeyWorks()
 	{
-		dao.save(new LargeTableSimplePKEntity("Alice"));
-		dao.save(new LargeTableSimplePKEntity("Bob"));
-		dao.save(new LargeTableSimplePKEntity("Carol"));
-		dao.save(new LargeTableSimplePKEntity("Dave"));
-		dao.save(new LargeTableSimplePKEntity("Eve"));
+		dao.persist(new LargeTableSimplePKEntity("Alice"));
+		dao.persist(new LargeTableSimplePKEntity("Bob"));
+		dao.persist(new LargeTableSimplePKEntity("Carol"));
+		dao.persist(new LargeTableSimplePKEntity("Dave"));
+		dao.persist(new LargeTableSimplePKEntity("Eve"));
 
 		// Try a regular query
 		assertEquals("custom-coded count should return 2", 2, dao.countWithAInName());
@@ -61,11 +61,11 @@ public class LargeTableQueryTest
 	@Transactional
 	public void testSearchWorks()
 	{
-		dao.save(new LargeTableSimplePKEntity("Alice"));
-		dao.save(new LargeTableSimplePKEntity("Bob"));
-		dao.save(new LargeTableSimplePKEntity("Carol"));
-		dao.save(new LargeTableSimplePKEntity("Dave"));
-		dao.save(new LargeTableSimplePKEntity("Eve"));
+		dao.persist(new LargeTableSimplePKEntity("Alice"));
+		dao.persist(new LargeTableSimplePKEntity("Bob"));
+		dao.persist(new LargeTableSimplePKEntity("Carol"));
+		dao.persist(new LargeTableSimplePKEntity("Dave"));
+		dao.persist(new LargeTableSimplePKEntity("Eve"));
 
 		// Try a regular query
 		assertEquals(2, dao.countWithAInName());
@@ -82,11 +82,11 @@ public class LargeTableQueryTest
 	@Transactional
 	public void testSearchWorksWithOrder()
 	{
-		dao.save(new LargeTableSimplePKEntity("Alice"));
-		dao.save(new LargeTableSimplePKEntity("Bob"));
-		dao.save(new LargeTableSimplePKEntity("Carol"));
-		dao.save(new LargeTableSimplePKEntity("Dave"));
-		dao.save(new LargeTableSimplePKEntity("Eve"));
+		dao.persist(new LargeTableSimplePKEntity("Alice"));
+		dao.persist(new LargeTableSimplePKEntity("Bob"));
+		dao.persist(new LargeTableSimplePKEntity("Carol"));
+		dao.persist(new LargeTableSimplePKEntity("Dave"));
+		dao.persist(new LargeTableSimplePKEntity("Eve"));
 
 		// Now try a web query
 
@@ -108,11 +108,11 @@ public class LargeTableQueryTest
 	@Transactional
 	public void testSearchComplexPK()
 	{
-		complexPKdao.save(new LargeTableComplexPKEntity("Alice"));
-		complexPKdao.save(new LargeTableComplexPKEntity("Bob"));
-		complexPKdao.save(new LargeTableComplexPKEntity("Carol"));
-		complexPKdao.save(new LargeTableComplexPKEntity("Dave"));
-		complexPKdao.save(new LargeTableComplexPKEntity("Eve"));
+		complexPKdao.persist(new LargeTableComplexPKEntity("Alice"));
+		complexPKdao.persist(new LargeTableComplexPKEntity("Bob"));
+		complexPKdao.persist(new LargeTableComplexPKEntity("Carol"));
+		complexPKdao.persist(new LargeTableComplexPKEntity("Dave"));
+		complexPKdao.persist(new LargeTableComplexPKEntity("Eve"));
 
 		assertEquals(2, complexPKdao.findByUriQuery(new WebQuery().contains("name", "a")).getList().size());
 	}
@@ -125,11 +125,11 @@ public class LargeTableQueryTest
 	@Transactional
 	public void testSearchComplexPKIDs()
 	{
-		complexPKdao.save(new LargeTableComplexPKEntity("Alice"));
-		complexPKdao.save(new LargeTableComplexPKEntity("Bob"));
-		complexPKdao.save(new LargeTableComplexPKEntity("Carol"));
-		complexPKdao.save(new LargeTableComplexPKEntity("Dave"));
-		complexPKdao.save(new LargeTableComplexPKEntity("Eve"));
+		complexPKdao.persist(new LargeTableComplexPKEntity("Alice"));
+		complexPKdao.persist(new LargeTableComplexPKEntity("Bob"));
+		complexPKdao.persist(new LargeTableComplexPKEntity("Carol"));
+		complexPKdao.persist(new LargeTableComplexPKEntity("Dave"));
+		complexPKdao.persist(new LargeTableComplexPKEntity("Eve"));
 
 		final List<SomePrimaryKey> results = complexPKdao.findIdsByUriQuery(new WebQuery().contains("name", "a")).getList();
 

@@ -1,9 +1,9 @@
 package com.peterphi.std.guice.restclient.exception;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
 import org.jboss.resteasy.util.HttpHeaderNames;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.Enumeration;
 
 public class RestThrowableConstants

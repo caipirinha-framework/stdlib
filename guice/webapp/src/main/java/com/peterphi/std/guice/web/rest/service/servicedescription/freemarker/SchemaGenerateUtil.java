@@ -5,9 +5,9 @@ import com.peterphi.std.util.jaxb.JAXBSerialiser;
 import com.peterphi.std.util.jaxb.MultiXSDGenerator;
 import com.peterphi.std.util.jaxb.type.MultiXSDSchemaFiles;
 
-import javax.xml.bind.annotation.XmlEnum;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlEnum;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

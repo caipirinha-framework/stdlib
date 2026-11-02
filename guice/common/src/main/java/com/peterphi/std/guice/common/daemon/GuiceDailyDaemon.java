@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.peterphi.std.guice.common.serviceprops.composite.GuiceConfig;
 import org.apache.commons.lang.StringUtils;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;

@@ -10,14 +10,14 @@ import com.peterphi.std.guice.restclient.resteasy.impl.jaxb.JAXBXmlRootElementPr
 import com.peterphi.std.util.jaxb.JAXBSerialiserFactory;
 import com.peterphi.std.util.tracing.Tracing;
 import com.peterphi.std.util.tracing.TracingConstants;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientResponseContext;
+import jakarta.ws.rs.client.ClientResponseFilter;
+import jakarta.ws.rs.client.ResponseProcessingException;
+import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientResponseContext;
-import javax.ws.rs.client.ClientResponseFilter;
-import javax.ws.rs.client.ResponseProcessingException;
-import javax.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -34,6 +34,7 @@ public class RemoteExceptionClientResponseFilter implements ClientResponseFilter
 
 	@Inject
 	JAXBSerialiserFactory serialiserFactory;
+
 
 	public RemoteExceptionClientResponseFilter()
 	{
@@ -90,9 +91,11 @@ public class RemoteExceptionClientResponseFilter implements ClientResponseFilter
 			}
 			catch (Throwable e)
 			{
-				throw new ResponseProcessingException(null, "Error mapping exception from thrown from " +
-				                                            requestContext.getUri() +
-				                                            " to exception!", e);
+				throw new ResponseProcessingException(null,
+				                                      "Error mapping exception from thrown from " +
+				                                      requestContext.getUri() +
+				                                      " to exception!",
+				                                      e);
 			}
 		}
 	}

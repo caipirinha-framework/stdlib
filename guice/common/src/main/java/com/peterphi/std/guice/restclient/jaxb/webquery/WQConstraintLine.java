@@ -1,6 +1,6 @@
 package com.peterphi.std.guice.restclient.jaxb.webquery;
 
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlType;
 
 /**
  * Base class for components of a Constraint Group

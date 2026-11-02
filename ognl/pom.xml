@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.peterphi.std</groupId>
+		<artifactId>stdlib-parent</artifactId>
+		<version>15.0.0-SNAPSHOT</version>
+	</parent>
+	<groupId>ognl</groupId>
+	<artifactId>ognl</artifactId>
+	<name>OGNL with generic method resolution compatibility</name>
+	<description>Upstream OGNL with a corrected generic parameter resolver for Hibernate persistent collections.</description>
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+	<dependencies>
+		<!-- Compile against upstream without exposing a second OGNL jar to consumers. -->
+		<dependency>
+			<groupId>ognl</groupId>
+			<artifactId>ognl</artifactId>
+			<version>${ognl.upstream.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>${guava.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.javassist</groupId>
+			<artifactId>javassist</artifactId>
+			<version>${javassist.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.11.0</version>
+				<executions>
+					<execution>
+						<id>include-upstream-ognl</id>
+						<phase>process-resources</phase>
+						<goals><goal>unpack</goal></goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>ognl</groupId>
+									<artifactId>ognl</artifactId>
+									<version>${ognl.upstream.version}</version>
+									<outputDirectory>${project.build.outputDirectory}</outputDirectory>
+									<!-- Keep upstream licences; compile our replacement exactly once. -->
+									<excludes>ognl/internal/entry/GenericMethodParameterTypeFactory.class,META-INF/MANIFEST.MF,META-INF/*.SF,META-INF/*.RSA,META-INF/*.DSA,META-INF/maven/**</excludes>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

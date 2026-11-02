@@ -16,13 +16,11 @@ public class JodaLocalDateUserType implements UserType, Comparator
 {
 	public static JodaLocalDateUserType INSTANCE = new JodaLocalDateUserType();
 
-	private static final int[] SQL_TYPES = {Types.DATE};
-
 
 	@Override
-	public int[] sqlTypes()
+	public int getSqlType()
 	{
-		return SQL_TYPES;
+		return Types.DATE;
 	}
 
 
@@ -60,11 +58,11 @@ public class JodaLocalDateUserType implements UserType, Comparator
 
 	@Override
 	public LocalDate nullSafeGet(final ResultSet resultSet,
-	                             final String[] names,
+	                             final int position,
 	                             final SharedSessionContractImplementor session,
 	                             final Object owner) throws HibernateException, SQLException
 	{
-		final java.sql.Date encoded = resultSet.getDate(names[0]);
+		final java.sql.Date encoded = resultSet.getDate(position);
 
 		if (resultSet.wasNull())
 			return null;

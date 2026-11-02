@@ -93,7 +93,7 @@ We keep hibernate configuration files in a separate folder, and they generally s
 
 .. code-block:: java
 	
-	hibernate.dialect=org.hibernate.dialect.SQLServer2008Dialect
+	hibernate.dialect=org.hibernate.dialect.SQLServerDialect
 	hibernate.connection.datasource=java:comp/env/jdbc/core-database
 	hibernate.default_schema=user_manager
 

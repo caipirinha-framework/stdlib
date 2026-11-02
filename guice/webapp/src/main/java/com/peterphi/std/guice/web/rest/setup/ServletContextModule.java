@@ -2,9 +2,9 @@ package com.peterphi.std.guice.web.rest.setup;
 
 import com.google.inject.AbstractModule;
 
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
 
 public class ServletContextModule extends AbstractModule
 {

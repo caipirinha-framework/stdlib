@@ -1,7 +1,7 @@
 package com.peterphi.std.guice.web.rest.jaxrs.exception;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
 /**
  * An exception that contains the exact Response that should be sent back to the client

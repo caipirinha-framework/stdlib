@@ -21,8 +21,8 @@ import com.peterphi.usermanager.guice.token.LowSecurityCSRFTokenStore;
 import com.peterphi.usermanager.ui.api.ServiceUIService;
 import org.apache.commons.lang.StringUtils;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
@@ -121,7 +121,7 @@ public class ServiceUIServiceImpl implements ServiceUIService
 		entity.setEnabled(true);
 		entity.setRoles(new HashSet<>(roleDao.getListById(roles)));
 
-		dao.save(entity);
+		entity = dao.merge(entity);
 
 		return Response.seeOther(URI.create("/service/" + entity.getId())).build();
 	}

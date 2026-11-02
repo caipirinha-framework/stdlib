@@ -25,7 +25,7 @@ import com.google.inject.Scope;
 import com.google.inject.Scopes;
 import com.peterphi.std.guice.web.HttpCallContext;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 final class RequestScoping implements Scope
 {

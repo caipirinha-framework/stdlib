@@ -26,13 +26,11 @@ public class StringDateTimeUserType implements UserType, UserVersionType, Compar
 	private static final DateTimeFormatter FORMAT = ISODateTimeFormat.basicDateTime();
 	public static StringDateTimeUserType INSTANCE = new StringDateTimeUserType();
 
-	private static final int[] SQL_TYPES = {Types.VARCHAR};
-
 
 	@Override
-	public int[] sqlTypes()
+	public int getSqlType()
 	{
-		return SQL_TYPES;
+		return Types.VARCHAR;
 	}
 
 
@@ -64,11 +62,11 @@ public class StringDateTimeUserType implements UserType, UserVersionType, Compar
 
 	@Override
 	public DateTime nullSafeGet(final ResultSet resultSet,
-	                            final String[] names,
+	                            final int position,
 	                            final SharedSessionContractImplementor session,
 	                            final Object owner) throws HibernateException, SQLException
 	{
-		final String encoded = resultSet.getString(names[0]);
+		final String encoded = resultSet.getString(position);
 
 		if (resultSet.wasNull())
 			return null;

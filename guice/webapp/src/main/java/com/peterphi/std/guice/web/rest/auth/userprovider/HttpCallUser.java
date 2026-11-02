@@ -9,7 +9,7 @@ import com.peterphi.std.guice.web.rest.auth.oauth2.CredentialsRestException;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
@@ -17,7 +17,7 @@ import java.util.Map;
 
 /**
  * An implementation of {@link com.peterphi.std.guice.common.auth.iface.CurrentUser} using the user attached to the context's
- * {@link javax.servlet.http.HttpServletRequest}
+ * {@link jakarta.servlet.http.HttpServletRequest}
  */
 class HttpCallUser implements CurrentUser
 {
