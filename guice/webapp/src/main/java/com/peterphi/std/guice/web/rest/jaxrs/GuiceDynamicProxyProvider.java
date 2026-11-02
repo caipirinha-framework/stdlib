@@ -1,16 +1,16 @@
 package com.peterphi.std.guice.web.rest.jaxrs;
 
 import com.peterphi.std.guice.apploader.impl.GuiceRegistry;
-import javassist.util.proxy.MethodHandler;
-import javassist.util.proxy.ProxyFactory;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
-class GuiceDynamicProxyProvider implements MethodHandler
+class GuiceDynamicProxyProvider implements InvocationHandler
 {
 	private final GuiceRegistry registry;
 	private final Class<?> clazz;
-	private final ProxyFactory proxyFactory = new ProxyFactory();
 
 	private Object proxyInstance;
 
@@ -18,8 +18,6 @@ class GuiceDynamicProxyProvider implements MethodHandler
 	{
 		this.registry = registry;
 		this.clazz = interfaceType;
-
-		proxyFactory.setInterfaces(new Class[]{clazz});
 	}
 
 	public synchronized Object getProxy()
@@ -34,7 +32,7 @@ class GuiceDynamicProxyProvider implements MethodHandler
 	{
 		try
 		{
-			return proxyFactory.create(new Class[]{}, new Object[]{}, this);
+			return Proxy.newProxyInstance(clazz.getClassLoader(), new Class<?>[]{clazz}, this);
 		}
 		catch (Exception e)
 		{
@@ -43,14 +41,21 @@ class GuiceDynamicProxyProvider implements MethodHandler
 	}
 
 	/**
-	 * A MethodHandler that proxies the Method invocation through to a Guice-acquired instance
+	 * Proxies each method invocation through to a Guice-acquired instance.
 	 */
 	@Override
-	public Object invoke(Object self, Method thisMethod, Method proceed, Object[] args) throws Throwable
+	public Object invoke(Object self, Method thisMethod, Object[] args) throws Throwable
 	{
 		// Get an instance of the implementing class via Guice
 		final Object instance = registry.getInjector().getInstance(clazz);
 
-		return thisMethod.invoke(instance, args);
+		try
+		{
+			return thisMethod.invoke(instance, args);
+		}
+		catch (InvocationTargetException e)
+		{
+			throw e.getCause();
+		}
 	}
 }
