@@ -23,26 +23,26 @@ public class ResteasyProviderRegistry
 	 */
 	public static synchronized void register(Class<?> clazz)
 	{
-		if (clazz.isAnnotationPresent(javax.ws.rs.ext.Provider.class))
+		if (clazz.isAnnotationPresent(jakarta.ws.rs.ext.Provider.class))
 		{
 			classes.add(clazz);
 			revision++;
 		}
 		else
 		{
-			throw new RuntimeException("Class " + clazz.getName() + " is not annotated with javax.ws.rs.ext.Provider");
+			throw new RuntimeException("Class " + clazz.getName() + " is not annotated with jakarta.ws.rs.ext.Provider");
 		}
 	}
 
 	public static synchronized void registerSingleton(Object o) {
-		if (o.getClass().isAnnotationPresent(javax.ws.rs.ext.Provider.class))
+		if (o.getClass().isAnnotationPresent(jakarta.ws.rs.ext.Provider.class))
 		{
 			singletons.add(o);
 			revision++;
 		}
 		else
 		{
-			throw new RuntimeException("Class " + o.getClass().getName() + " is not annotated with javax.ws.rs.ext.Provider");
+			throw new RuntimeException("Class " + o.getClass().getName() + " is not annotated with jakarta.ws.rs.ext.Provider");
 		}
 
 	}

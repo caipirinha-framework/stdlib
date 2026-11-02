@@ -19,7 +19,7 @@ import com.peterphi.usermanager.ui.api.RegisterUIService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;

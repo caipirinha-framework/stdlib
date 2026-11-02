@@ -7,10 +7,10 @@ import com.peterphi.std.util.jaxb.JAXBSerialiserFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.ext.Provider;
-import javax.xml.bind.JAXBElement;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.xml.bind.JAXBElement;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
@@ -103,7 +103,7 @@ public class FastInfosetXmlRootElementProvider<T> extends JAXBXmlRootElementProv
 		}
 
 		// Optionally unwrap & return
-		if (obj instanceof JAXBElement<?> e)
+		if (obj instanceof JAXBElement<?> e && !clazz.equals(JAXBElement.class))
 			return clazz.cast(e.getValue());
 		else
 			return clazz.cast(obj);

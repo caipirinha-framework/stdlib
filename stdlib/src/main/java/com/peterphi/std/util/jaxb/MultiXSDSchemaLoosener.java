@@ -8,7 +8,7 @@ import org.w3c.dom.NodeList;
 
 /**
  * Utility class that loosens any xsd:any constraint where namespace="##other" to namespace="##any" (because JAXB cannot
- * represent namespace="##any" with {@link javax.xml.bind.annotation.XmlAnyElement}, so the generated schemas are often
+ * represent namespace="##any" with {@link jakarta.xml.bind.annotation.XmlAnyElement}, so the generated schemas are often
  * over-constrained as a result)
  */
 public class MultiXSDSchemaLoosener

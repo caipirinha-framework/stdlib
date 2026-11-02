@@ -12,11 +12,11 @@ import com.peterphi.std.guice.serviceregistry.rest.RestResourceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Path;
 import java.util.List;
 
 /**
- * Discovers all classes/interfaces annotated with {@link javax.ws.rs.Path} and registers them with the {@link
+ * Discovers all classes/interfaces annotated with {@link jakarta.ws.rs.Path} and registers them with the {@link
  * com.peterphi.std.guice.serviceregistry.rest.RestResource}.<br />
  * <p>
  * In addition, searches for implementations (unless the interface is annotated with {@link com.google.inject.ImplementedBy}) and

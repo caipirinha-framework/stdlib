@@ -21,13 +21,11 @@ public class DateUserType implements UserType, UserVersionType, Comparator
 {
 	public static DateUserType INSTANCE = new DateUserType();
 
-	private static final int[] SQL_TYPES = {Types.BIGINT};
-
 
 	@Override
-	public int[] sqlTypes()
+	public int getSqlType()
 	{
-		return SQL_TYPES;
+		return Types.BIGINT;
 	}
 
 
@@ -58,14 +56,14 @@ public class DateUserType implements UserType, UserVersionType, Comparator
 
 
 	@Override
-	public Object nullSafeGet(final ResultSet resultSet,
-	                          final String[] names,
+	public Object nullSafeGet(final ResultSet rs,
+	                          final int position,
 	                          final SharedSessionContractImplementor session,
-	                          final Object owner) throws HibernateException, SQLException
+	                          final Object owner) throws SQLException
 	{
-		final long timestamp = resultSet.getLong(names[0]);
+		final long timestamp = rs.getLong(position);
 
-		if (resultSet.wasNull())
+		if (rs.wasNull())
 			return null;
 		else
 			return new Date(timestamp);
@@ -143,7 +141,9 @@ public class DateUserType implements UserType, UserVersionType, Comparator
 	@Override
 	public Date next(final Object current, final SharedSessionContractImplementor session)
 	{
-		return seed(session);
+		final Date candidate = seed(session);
+		final Date previous = (Date) current;
+		return candidate.after(previous) ? candidate : new Date(Math.addExact(previous.getTime(), 1));
 	}
 
 
@@ -152,5 +152,4 @@ public class DateUserType implements UserType, UserVersionType, Comparator
 	{
 		return ((Date) a).compareTo((Date) b);
 	}
-
 }

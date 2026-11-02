@@ -24,8 +24,8 @@ import java.security.Principal;
 import java.util.Enumeration;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.thymeleaf.util.Validate;
 
@@ -36,20 +36,20 @@ import org.thymeleaf.util.Validate;
  * @since 3.1.0
  *
  */
-final class JavaxServletWebExchange implements IServletWebExchange {
+final class JakartaServletWebExchange implements IServletWebExchange {
 
-    private final JavaxServletWebRequest webRequest;
-    private final JavaxServletWebSession webSession; // can be null
-    private final JavaxServletWebApplication webApplication;
+    private final JakartaServletWebRequest webRequest;
+    private final JakartaServletWebSession webSession; // can be null
+    private final JakartaServletWebApplication webApplication;
 
     private final HttpServletRequest httpServletRequest;
     private final HttpServletResponse httpServletResponse;
 
 
-    JavaxServletWebExchange(final JavaxServletWebRequest webRequest,
-                            final JavaxServletWebSession webSession,
-                            final JavaxServletWebApplication webApplication,
-                            final HttpServletResponse httpServletResponse) {
+    JakartaServletWebExchange(final JakartaServletWebRequest webRequest,
+                              final JakartaServletWebSession webSession,
+                              final JakartaServletWebApplication webApplication,
+                              final HttpServletResponse httpServletResponse) {
         super();
         Validate.notNull(webRequest, "Web Request cannot be null");
         // session CAN be null

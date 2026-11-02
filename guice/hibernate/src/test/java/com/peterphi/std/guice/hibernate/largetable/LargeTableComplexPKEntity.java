@@ -4,9 +4,9 @@ import com.peterphi.std.guice.database.annotation.LargeTable;
 import com.peterphi.std.types.SimpleId;
 import org.joda.time.DateTime;
 
-import javax.persistence.Column;
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
 
 @LargeTable
 @Entity(name = "complex_pk_entity")

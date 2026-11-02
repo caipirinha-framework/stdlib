@@ -2,8 +2,7 @@ package com.peterphi.std.guice.hibernate.webquery.embeddedpktest;
 
 import com.peterphi.std.guice.database.annotation.Transactional;
 import com.peterphi.std.guice.hibernate.dao.HibernateDao;
-import org.hibernate.Criteria;
-import org.hibernate.criterion.Restrictions;
+import com.peterphi.std.guice.restclient.jaxb.webquery.WebQuery;
 
 import java.util.List;
 
@@ -12,11 +11,7 @@ public class EmbeddedPkDaoImpl extends HibernateDao<EmbeddedPkEntity, SomePrimar
 	@SuppressWarnings("deprecation")
 	public List<EmbeddedPkEntity> findByTimestamp(final long timestamp)
 	{
-		Criteria criteria = createCriteria();
-
-		criteria.add(Restrictions.eq("id.timestamp", timestamp));
-
-		return getList(criteria);
+		return find(new WebQuery().eq("id:timestamp", timestamp)).getList();
 	}
 
 

@@ -2,15 +2,15 @@ package com.peterphi.usermanager.db.entity;
 
 import com.google.common.base.MoreObjects;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.OrderBy;
-import javax.persistence.UniqueConstraint;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.UniqueConstraint;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -55,7 +55,7 @@ public class RoleEntity
 	@OrderBy("id DESC")
 	@ManyToMany(cascade = CascadeType.ALL)
 	@JoinTable(name = "user_has_role", //
-			joinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", nullable = false, updatable = false)}, inverseJoinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, updatable = false)}, uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id",
+			joinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", nullable = false)}, inverseJoinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)}, uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id",
 			                                                                                                                                                                                                                                                                                               "role_id"})})
 	public List<UserEntity> getMembers()
 	{
@@ -71,8 +71,8 @@ public class RoleEntity
 
 	@ManyToMany(cascade = CascadeType.ALL)
 	@JoinTable(name = "service_has_role", //
-			joinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", nullable = false, updatable = false)}, inverseJoinColumns = {
-			@JoinColumn(name = "service_id", referencedColumnName = "id", nullable = false, updatable = false)}, uniqueConstraints = {
+			joinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id", nullable = false)}, inverseJoinColumns = {
+			@JoinColumn(name = "service_id", referencedColumnName = "id", nullable = false)}, uniqueConstraints = {
 			@UniqueConstraint(columnNames = {"service_id", "role_id"})})
 	public Set<OAuthServiceEntity> getServiceMembers()
 	{

@@ -28,8 +28,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.thymeleaf.util.Validate;
 
@@ -40,12 +40,12 @@ import org.thymeleaf.util.Validate;
  * @since 3.1.0
  *
  */
-final class JavaxServletWebRequest implements IServletWebRequest {
+final class JakartaServletWebRequest implements IServletWebRequest {
 
     private final HttpServletRequest request;
 
 
-    JavaxServletWebRequest(final HttpServletRequest request) {
+    JakartaServletWebRequest(final HttpServletRequest request) {
         super();
         Validate.notNull(request, "Request cannot be null");
         this.request = request;

@@ -16,6 +16,7 @@ import org.hibernate.SessionFactory;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -109,9 +110,12 @@ public class JPASearchExecutor
 					}
 					else if (query.getFetch() == null || StringUtils.equals(query.getFetch(), "entity"))
 					{
-						// If we're constraining by (or fetching) a collection AND we have a limit/offset, first get PKs for the entities and then fetch the entities
+						// Select one ordered ID per entity before fetching collection results.
+						// Collection ordering also uses this path without pagination so its min/max semantics stay consistent.
 						// This is necessary for correct pagination because the SQL resultset will have more than one row per entity, and our offset/limit is based on entity
-						if ((query.getLimit() > 0 || query.getOffset() > 0) && (builder.hasCollectionJoin() || builder.hasCollectionFetch()))
+						if (builder.hasCollectionOrder() || (builder.hasCollectionJoin() && builder.hasListOrCollectionFetch()) ||
+						    ((query.getLimit() > 0 || query.getOffset() > 0) &&
+						                                      (builder.hasCollectionJoin() || builder.hasCollectionFetch())))
 						{
 							strategy = JPASearchStrategy.ID_THEN_QUERY_ENTITY;
 						}
@@ -193,16 +197,19 @@ public class JPASearchExecutor
 					}
 					case ID_THEN_QUERY_ENTITY:
 					{
-						// First, query for the IDs (and the total results if desired)
-						list = builder.selectIDs();
+						// IDs are internal to entity pagination, not exposed query results.
+						list = builder.selectIDsForEntityPage();
 
 						// Now re-query to retrieve the entities
 						if (!list.isEmpty())
 						{
+							final List<?> orderedIds = list;
 							builder = new JPAQueryBuilder(sessionFactory.getCurrentSession(), entity, permitSchemaPrivate);
-							builder.forIDs(query, list);
+							builder.forIDs(query, orderedIds);
 
-							list = builder.selectEntity();
+							final Map<Object, Object> entitiesById = (Map) builder.selectEntity().stream()
+									.collect(Collectors.toMap(sessionFactory.getPersistenceUnitUtil()::getIdentifier, Function.identity()));
+							list = orderedIds.stream().filter(entitiesById::containsKey).map(entitiesById::get).toList();
 						}
 
 

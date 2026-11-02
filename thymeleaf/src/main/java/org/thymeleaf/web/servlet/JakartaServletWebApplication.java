@@ -26,9 +26,9 @@ import java.net.URL;
 import java.util.Enumeration;
 import java.util.Objects;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.thymeleaf.util.Validate;
 
@@ -39,21 +39,21 @@ import org.thymeleaf.util.Validate;
  * @since 3.1.0
  *
  */
-public class JavaxServletWebApplication implements IServletWebApplication {
+public class JakartaServletWebApplication implements IServletWebApplication {
 // This class is made NOT final so that it can be proxied by Dependency Injection frameworks
 
     private final ServletContext servletContext;
 
 
-    JavaxServletWebApplication(final ServletContext servletContext) {
+    JakartaServletWebApplication(final ServletContext servletContext) {
         super();
         Validate.notNull(servletContext, "Servlet context cannot be null");
         this.servletContext = servletContext;
     }
 
 
-    public static JavaxServletWebApplication buildApplication(final ServletContext servletContext) {
-        return new JavaxServletWebApplication(servletContext);
+    public static JakartaServletWebApplication buildApplication(final ServletContext servletContext) {
+        return new JakartaServletWebApplication(servletContext);
     }
 
     public IServletWebExchange buildExchange(final HttpServletRequest httpServletRequest,
@@ -65,10 +65,10 @@ public class JavaxServletWebApplication implements IServletWebApplication {
                 "Cannot build an application for a request which servlet context does not match with " +
                 "the application that it is being built for.");
 
-        final JavaxServletWebRequest request = new JavaxServletWebRequest(httpServletRequest);
-        final JavaxServletWebSession session = new JavaxServletWebSession(httpServletRequest);
+        final JakartaServletWebRequest request = new JakartaServletWebRequest(httpServletRequest);
+        final JakartaServletWebSession session = new JakartaServletWebSession(httpServletRequest);
 
-        return new JavaxServletWebExchange(request, session, this, httpServletResponse);
+        return new JakartaServletWebExchange(request, session, this, httpServletResponse);
 
     }
 

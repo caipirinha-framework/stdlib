@@ -2,8 +2,8 @@ package com.peterphi.std.guice.freemarker;
 
 import com.peterphi.std.guice.web.HttpCallContext;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**

@@ -11,7 +11,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Uses a Hibernate {@link org.hibernate.Interceptor} to intercept SQL Statement preparations as they happen on the local thread
+ * Records SQL preparations from the current thread through Hibernate's
+ * {@link org.hibernate.resource.jdbc.spi.StatementInspector}.
  */
 public class HibernateSQLLogger implements Closeable, AutoCloseable, Consumer<String>
 {

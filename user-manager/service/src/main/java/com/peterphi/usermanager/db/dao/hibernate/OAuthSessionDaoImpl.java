@@ -26,7 +26,7 @@ public class OAuthSessionDaoImpl extends HibernateDao<OAuthSessionEntity, String
 
 		session.setExpires(expires);
 
-		save(session);
+		session = merge(session); // todo can we just return this?
 
 		return getById(session.getId());
 	}

@@ -9,7 +9,7 @@ import com.peterphi.std.threading.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.BadRequestException;
+import jakarta.ws.rs.BadRequestException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.lang.reflect.InvocationHandler;

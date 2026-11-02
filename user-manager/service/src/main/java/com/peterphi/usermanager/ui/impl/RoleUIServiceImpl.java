@@ -17,8 +17,8 @@ import com.peterphi.usermanager.guice.token.LowSecurityCSRFTokenStore;
 import com.peterphi.usermanager.ui.api.RoleUIService;
 import org.apache.commons.lang.StringUtils;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -92,7 +92,7 @@ public class RoleUIServiceImpl implements RoleUIService
 		entity.setId(id);
 		entity.setCaption(caption);
 
-		dao.save(entity);
+		dao.persist(entity);
 
 		return Response.seeOther(URI.create("/role/" + id)).build();
 	}

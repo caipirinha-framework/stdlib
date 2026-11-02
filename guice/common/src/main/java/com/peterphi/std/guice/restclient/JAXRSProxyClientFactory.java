@@ -4,7 +4,7 @@ import com.google.inject.ImplementedBy;
 import com.peterphi.std.guice.restclient.resteasy.impl.ResteasyProxyClientFactoryImpl;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 
-import javax.ws.rs.client.WebTarget;
+import jakarta.ws.rs.client.WebTarget;
 import java.net.URI;
 import java.util.function.Supplier;
 

@@ -4,6 +4,10 @@ import com.peterphi.std.guice.restclient.jaxb.ExceptionInfo;
 import com.peterphi.std.guice.restclient.jaxb.RestFailure;
 import org.apache.commons.lang.StringUtils;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
 
 public class BootstrapRestFailurePageRenderer extends BootstrapPageWriter

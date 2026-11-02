@@ -2,9 +2,9 @@ package com.peterphi.std.guice.restclient.exception;
 
 import com.peterphi.std.guice.restclient.jaxb.RestFailure;
 
+import jakarta.ws.rs.client.ClientResponseContext;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.ws.rs.client.ClientResponseContext;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;

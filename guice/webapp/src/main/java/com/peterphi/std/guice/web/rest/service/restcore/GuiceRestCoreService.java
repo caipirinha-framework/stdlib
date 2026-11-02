@@ -4,8 +4,8 @@ import com.google.inject.ImplementedBy;
 import com.peterphi.std.annotation.Doc;
 import com.peterphi.std.guice.restclient.annotations.FastFailServiceClient;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Doc("Core framework development services")
 @Path("/guice/rest-core")

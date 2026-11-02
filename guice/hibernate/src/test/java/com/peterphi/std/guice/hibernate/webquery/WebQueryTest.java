@@ -10,7 +10,7 @@ import org.apache.commons.lang.StringUtils;
 import org.jboss.resteasy.specimpl.ResteasyUriInfo;
 import org.junit.Test;
 
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.LinkedHashMap;

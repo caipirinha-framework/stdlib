@@ -17,6 +17,7 @@ import com.peterphi.std.guice.hibernate.usertype.JodaLocalDateUserType;
 import com.peterphi.std.guice.hibernate.usertype.SampleCountUserType;
 import com.peterphi.std.guice.hibernate.usertype.TimecodeUserType;
 import com.peterphi.std.io.PropertyFile;
+import jakarta.persistence.AttributeConverter;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +26,11 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
+import org.hibernate.type.CustomType;
 import org.hibernate.usertype.UserType;
 
 import java.sql.Connection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -94,9 +97,9 @@ public abstract class HibernateModule extends AbstractModule
 		Configuration config = new Configuration();
 
 		// Set up the interceptor
-		config.setInterceptor(interceptor.getInterceptor());
-
+		config.setStatementInspector(interceptor);
 		config.addProperties(properties);
+
 
 		configure(config);
 
@@ -209,7 +212,13 @@ public abstract class HibernateModule extends AbstractModule
 	protected void registerTypes(final Configuration config)
 	{
 		// Map Date and DateTime types to BIGINT by default
-		registerType(config, DateUserType.INSTANCE);
+		config.registerTypeContributor((contributions, registry) -> {
+			final CustomType<Date> dateType = new CustomType<>(DateUserType.INSTANCE, contributions.getTypeConfiguration());
+			// Hibernate 7 resolves temporal precision before named basic types. Replace the
+			// Java descriptor too, preserving BIGINT storage for ordinary and version fields.
+			contributions.contributeJavaType(dateType.getJavaTypeDescriptor());
+			contributions.contributeType(dateType, Date.class.getName());
+		});
 		registerType(config, JodaDateTimeUserType.INSTANCE);
 
 		registerType(config, TimecodeUserType.INSTANCE);
@@ -224,6 +233,9 @@ public abstract class HibernateModule extends AbstractModule
 	{
 		String className = type.returnedClass().getName();
 		configuration.registerTypeOverride(type, new String[]{className});
+
+		if (type instanceof AttributeConverter<?, ?>)
+			configuration.addAttributeConverter((AttributeConverter<?, ?>) type);
 	}
 
 

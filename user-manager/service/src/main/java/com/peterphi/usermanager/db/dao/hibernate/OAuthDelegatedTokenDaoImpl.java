@@ -17,9 +17,7 @@ public class OAuthDelegatedTokenDaoImpl extends HibernateDao<OAuthDelegatedToken
 		entity.setSession(session);
 		entity.setExpires(expires);
 
-		save(entity);
-
-		return entity;
+		return merge(entity);
 	}
 
 

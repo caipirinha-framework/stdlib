@@ -160,7 +160,7 @@ public class UserDaoImpl extends HibernateDao<UserEntity, Integer>
 		account.setTimeZone(timeZone);
 		account.setSessionReconnectKey(UUID.randomUUID().toString());
 
-		return save(account);
+		return merge(account).getId();
 	}
 
 
@@ -184,7 +184,7 @@ public class UserDaoImpl extends HibernateDao<UserEntity, Integer>
 		account.setTimeZone(CurrentUser.DEFAULT_TIMEZONE);
 		account.setDateFormat(CurrentUser.DEFAULT_DATE_FORMAT_STRING);
 
-		return save(account);
+		return merge(account).getId();
 	}
 
 
