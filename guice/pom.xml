@@ -41,6 +41,13 @@
 			<classifier>classes</classifier>
 		</dependency>
 
+		<!-- Declare Guava directly so consumers also receive the newer version. -->
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>${guava.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.apache.xbean</groupId>
 			<artifactId>xbean-finder</artifactId>
