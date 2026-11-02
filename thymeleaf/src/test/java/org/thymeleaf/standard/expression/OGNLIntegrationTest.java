@@ -63,6 +63,19 @@ public class OGNLIntegrationTest {
                 "<p th:text=\"${(#name='alice'), #strings.toUpperCase(#name)}\"></p>", new Context()));
     }
 
+    @Test
+    public void rendersPrimitiveAndObjectArrayLengths() {
+        for (Object array : List.of(new int[]{1, 2, 3}, new long[]{1L, 2L}, new boolean[0],
+                new byte[1], new short[2], new char[3], new float[4], new double[5],
+                new String[]{"a", "b"}, new Object[]{"a", 1})) {
+            Context context = new Context();
+            context.setVariable("array", array);
+            String expected = "<p>" + java.lang.reflect.Array.getLength(array) + "</p>";
+            assertEquals(expected, engine.process("<p th:text=\"${array.length}\"></p>", context));
+            assertEquals(expected, engine.process("<p th:text=\"${array.length + 0}\"></p>", context));
+        }
+    }
+
     @Test(expected = TemplateProcessingException.class)
     public void rejectsReplacingExpressionObjects() {
         engine.process("<p th:text=\"${#strings='replacement'}\"></p>", new Context());
