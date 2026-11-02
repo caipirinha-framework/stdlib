@@ -19,7 +19,7 @@ public abstract class EmbeddedPostgresTestCase
 		PropertyFile f = new PropertyFile();
 
 		f.set("hibernate.connection.driver_class", EmbeddedPostgresDriver.class.getName());
-		f.set("hibernate.dialect", "org.hibernate.dialect.PostgreSQL10Dialect");
+		f.set("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
 		f.set("hibernate.connection.url", "jdbc:embedded-postgres:shared");
 
 		// Allow

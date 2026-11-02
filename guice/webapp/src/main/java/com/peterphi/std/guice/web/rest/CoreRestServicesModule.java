@@ -22,7 +22,7 @@ import com.peterphi.std.guice.web.rest.service.servicedescription.RestConfigList
 import com.peterphi.std.guice.web.rest.service.servicedescription.RestServiceList;
 import com.peterphi.std.guice.web.rest.templating.thymeleaf.ThymeleafModule;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 import java.net.URI;
 
 public class CoreRestServicesModule extends AbstractModule

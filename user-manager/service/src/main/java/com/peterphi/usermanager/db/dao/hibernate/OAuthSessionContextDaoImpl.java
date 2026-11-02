@@ -51,7 +51,7 @@ public class OAuthSessionContextDaoImpl extends HibernateDao<OAuthSessionContext
 			entity.setService(service);
 			entity.setActive(true);
 
-			entity.setId(save(entity));
+			entity = merge(entity);
 		}
 
 		return entity;

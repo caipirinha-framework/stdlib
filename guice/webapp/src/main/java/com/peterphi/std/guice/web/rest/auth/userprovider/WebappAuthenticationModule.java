@@ -15,7 +15,7 @@ import com.peterphi.std.guice.web.rest.scoping.SessionScoped;
 import com.peterphi.std.util.tracing.TracingConstants;
 import org.slf4j.MDC;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 public class WebappAuthenticationModule extends AbstractModule

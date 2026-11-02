@@ -2,7 +2,7 @@ package com.peterphi.std.guice.common.daemon;
 
 import com.peterphi.std.threading.Timeout;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 

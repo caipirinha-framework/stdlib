@@ -2,7 +2,7 @@ package com.peterphi.std.guice.common.stringparsing;
 
 import com.peterphi.std.threading.Timeout;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;

@@ -11,9 +11,11 @@ import com.peterphi.std.guice.web.rest.templating.TemplateCall;
 import com.peterphi.std.guice.web.rest.templating.Templater;
 import com.peterphi.usermanager.guice.authentication.UserLoginProvider;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Renders exceptions using a template

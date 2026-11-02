@@ -2,10 +2,10 @@ package com.peterphi.std.guice.hibernate.largetable;
 
 import com.peterphi.std.guice.database.annotation.LargeTable;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
 
 @LargeTable
 @Entity(name = "simple_pk_entity")

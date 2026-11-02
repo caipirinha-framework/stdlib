@@ -14,8 +14,8 @@ import com.peterphi.usermanager.guice.async.AsynchronousActionService;
 import com.peterphi.usermanager.guice.authentication.db.InternalUserAuthenticationServiceImpl;
 import com.peterphi.usermanager.guice.authentication.ldap.LocalAndLDAPAuthenticationService;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * Handles creating the (session scoped) UserLogin object

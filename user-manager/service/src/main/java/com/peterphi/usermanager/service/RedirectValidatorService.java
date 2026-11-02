@@ -8,7 +8,7 @@ import com.peterphi.usermanager.db.dao.hibernate.OAuthServiceDaoImpl;
 import com.peterphi.usermanager.db.entity.OAuthServiceEntity;
 import org.apache.commons.lang.StringUtils;
 
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;

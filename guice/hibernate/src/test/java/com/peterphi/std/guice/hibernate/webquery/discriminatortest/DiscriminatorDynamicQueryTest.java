@@ -28,8 +28,8 @@ public class DiscriminatorDynamicQueryTest
 		MyChildObject1 a = new MyChildObject1();
 		MyChildObject2 b = new MyChildObject2();
 
-		a.id = dao.save(a);
-		b.id = dao.save(b);
+		a.id = dao.merge(a).id;
+		b.id = dao.merge(b).id;
 
 		// Make sure the right subclass is returned from a getById query
 		assertTrue(dao.getById(a.id) instanceof MyChildObject1);
@@ -48,8 +48,8 @@ public class DiscriminatorDynamicQueryTest
 
 		MyChildObject2 b = new MyChildObject2();
 
-		a.id = dao.save(a);
-		b.id = dao.save(b);
+		a.id = dao.merge(a).id;
+		b.id = dao.merge(b).id;
 
 
 		final List<MyBaseObject> results = dao.findByUriQuery(new WebQuery().subclass("one").eq("someId", a.someId)).getList();
@@ -65,8 +65,8 @@ public class DiscriminatorDynamicQueryTest
 		MyChildObject1 a = new MyChildObject1();
 		MyChildObject2 b = new MyChildObject2();
 
-		a.id = dao.save(a);
-		b.id = dao.save(b);
+		a.id = dao.merge(a).id;
+		b.id = dao.merge(b).id;
 
 		{
 			// We'd get a org.hibernate.QueryException if Hibernate doesn't understand

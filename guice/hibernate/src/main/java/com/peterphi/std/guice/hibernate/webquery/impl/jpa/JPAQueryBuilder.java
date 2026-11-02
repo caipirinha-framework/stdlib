@@ -1,5 +1,7 @@
 package com.peterphi.std.guice.hibernate.webquery.impl.jpa;
 
+import com.google.common.reflect.TypeToken;
+
 import com.peterphi.std.NotImplementedException;
 import com.peterphi.std.guice.hibernate.webquery.impl.QEntity;
 import com.peterphi.std.guice.hibernate.webquery.impl.QRelation;
@@ -13,25 +15,29 @@ import com.peterphi.std.guice.restclient.jaxb.webquery.WQGroup;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WQGroupType;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WQOrder;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WebQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Fetch;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Order;
+import jakarta.persistence.criteria.ParameterExpression;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Selection;
+import jakarta.persistence.metamodel.Attribute;
 import org.apache.commons.lang.StringUtils;
-import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
+import org.hibernate.query.sqm.tree.domain.SqmPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Fetch;
-import javax.persistence.criteria.JoinType;
-import javax.persistence.criteria.Order;
-import javax.persistence.criteria.ParameterExpression;
-import javax.persistence.criteria.Path;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Selection;
 import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -323,8 +329,38 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 
 	private Object parseValue(final Expression property, final String value)
 	{
-		final Class clazz = property.getJavaType();
-		return WQTypeHelper.parse(clazz, value);
+		final Class<?> clazz = property.getJavaType();
+
+		if (clazz == Enum.class)
+		{
+			// Hibernate has unhelpfully given us the base Enum type. Need to translate this to an actual Java enum class
+			// To do this we need to peek inside the Expression
+			if (property instanceof SqmPath<?> p && p.getModel() instanceof Attribute a)
+			{
+				final Member member = a.getJavaMember();
+
+				if (member instanceof Method m)
+				{
+					return WQTypeHelper.parse(TypeToken.of(p.getLhs().getJavaType()).resolveType(m.getGenericReturnType()).getRawType(), value);
+				}
+				else if (member instanceof Field f)
+				{
+					return WQTypeHelper.parse(TypeToken.of(p.getLhs().getJavaType()).resolveType(f.getGenericType()).getRawType(), value);
+				}
+				else
+				{
+					throw new IllegalArgumentException("Unsupported member type for enum: " + member.getClass());
+				}
+			}
+			else
+			{
+				throw new IllegalArgumentException("Unknown enum property class: " + property.getClass());
+			}
+		}
+		else
+		{
+			return WQTypeHelper.parse(clazz, value);
+		}
 	}
 
 
@@ -624,9 +660,9 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 		}
 
 		if (offset != null)
-			query.getQueryOptions().setFirstRow(offset);
+			query.setFirstResult(offset);
 		if (limit != null)
-			query.getQueryOptions().setMaxRows(limit);
+			query.setMaxResults(limit);
 
 		// Set all the parameters
 		for (Map.Entry<ParameterExpression, Object> entry : this.params.entrySet())
@@ -674,9 +710,9 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 		}
 
 		if (offset != null)
-			query.getQueryOptions().setFirstRow(offset);
+			query.setFirstResult(offset);
 		if (limit != null)
-			query.getQueryOptions().setMaxRows(limit);
+			query.setMaxResults(limit);
 
 		// Set all the parameters
 		for (Map.Entry<ParameterExpression, Object> entry : this.params.entrySet())
@@ -709,9 +745,9 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 		}
 
 		if (offset != null)
-			query.getQueryOptions().setFirstRow(offset);
+			query.setFirstResult(offset);
 		if (limit != null)
-			query.getQueryOptions().setMaxRows(limit);
+			query.setMaxResults(limit);
 
 		// Set all the parameters
 		for (Map.Entry<ParameterExpression, Object> entry : this.params.entrySet())
@@ -737,11 +773,11 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 		}
 
 		if (offset != null)
-			query.getQueryOptions().setFirstRow(offset);
+			query.setFirstResult(offset);
 		if (limit != null)
-			query.getQueryOptions().setMaxRows(limit);
+			query.setMaxResults(limit);
 
-		query.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		// Hibernate 6+ removes duplicate entity results introduced by fetch joins.
 
 		// Set all the parameters
 		for (Map.Entry<ParameterExpression, Object> entry : this.params.entrySet())

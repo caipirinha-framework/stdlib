@@ -44,10 +44,10 @@ public class DbunitModuleTest
 		// Add some db contents
 		try (HibernateTransaction tx = txutils.start().withAutoCommit())
 		{
-			dao.save(new SimpleEntity(1, "alice", new GroupEntity(1), new GroupEntity(2)));
-			dao.save(new SimpleEntity(2, "bob"));
-			dao.save(new SimpleEntity(3, "carol"));
-			dao.save(new SimpleEntity(4, "dave"));
+			dao.persist(new SimpleEntity(1, "alice", new GroupEntity(1), new GroupEntity(2)));
+			dao.persist(new SimpleEntity(2, "bob"));
+			dao.persist(new SimpleEntity(3, "carol"));
+			dao.persist(new SimpleEntity(4, "dave"));
 		}
 
 		// DB should now have 4 rows

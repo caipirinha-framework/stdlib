@@ -17,6 +17,7 @@ import com.peterphi.std.guice.hibernate.usertype.JodaLocalDateUserType;
 import com.peterphi.std.guice.hibernate.usertype.SampleCountUserType;
 import com.peterphi.std.guice.hibernate.usertype.TimecodeUserType;
 import com.peterphi.std.io.PropertyFile;
+import jakarta.persistence.AttributeConverter;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,9 +95,10 @@ public abstract class HibernateModule extends AbstractModule
 		Configuration config = new Configuration();
 
 		// Set up the interceptor
-		config.setInterceptor(interceptor.getInterceptor());
-
+		config.setStatementInspector(interceptor);
+		properties.setProperty("hibernate.xml_mapping_enabled", "false");
 		config.addProperties(properties);
+
 
 		configure(config);
 
@@ -224,6 +226,9 @@ public abstract class HibernateModule extends AbstractModule
 	{
 		String className = type.returnedClass().getName();
 		configuration.registerTypeOverride(type, new String[]{className});
+
+		if (type instanceof AttributeConverter<?, ?>)
+			configuration.addAttributeConverter((AttributeConverter<?, ?>) type);
 	}
 
 

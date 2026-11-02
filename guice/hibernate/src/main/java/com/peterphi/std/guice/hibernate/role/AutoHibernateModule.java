@@ -5,11 +5,10 @@ import com.peterphi.std.guice.common.ClassScanner;
 import com.peterphi.std.guice.common.ClassScannerFactory;
 import com.peterphi.std.guice.common.serviceprops.composite.GuiceConfig;
 import com.peterphi.std.guice.hibernate.module.HibernateModule;
+import jakarta.persistence.Entity;
+import org.hibernate.cfg.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.hibernate.cfg.Configuration;
-
-import javax.persistence.Entity;
 
 class AutoHibernateModule extends HibernateModule
 {

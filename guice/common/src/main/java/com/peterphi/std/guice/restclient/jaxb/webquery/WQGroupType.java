@@ -1,7 +1,7 @@
 package com.peterphi.std.guice.restclient.jaxb.webquery;
 
-import javax.xml.bind.annotation.XmlEnum;
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlEnum;
+import jakarta.xml.bind.annotation.XmlType;
 
 /**
  * Defines a group constraint combining approach

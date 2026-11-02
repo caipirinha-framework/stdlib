@@ -84,10 +84,11 @@ public class QProperty
 
 		if (obj.type == WQDataType.ENUM)
 		{
-			obj.enumValues = new ArrayList<>();
 			obj.enumType = clazz.getSimpleName();
 
-			for (Object val : clazz.getEnumConstants())
+			final Object[] consts = clazz.getEnumConstants();
+			obj.enumValues = new ArrayList<>(consts.length);
+			for (Object val : consts)
 			{
 				obj.enumValues.add(((Enum) val).name());
 			}

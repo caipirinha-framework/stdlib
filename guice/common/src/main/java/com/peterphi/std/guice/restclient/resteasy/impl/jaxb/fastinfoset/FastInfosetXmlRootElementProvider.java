@@ -7,10 +7,10 @@ import com.peterphi.std.util.jaxb.JAXBSerialiserFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.ext.Provider;
-import javax.xml.bind.JAXBElement;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.xml.bind.JAXBElement;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;

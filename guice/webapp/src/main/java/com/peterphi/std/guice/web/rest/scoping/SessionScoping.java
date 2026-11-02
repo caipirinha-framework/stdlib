@@ -25,7 +25,7 @@ import com.google.inject.Scope;
 import com.google.inject.Scopes;
 import com.peterphi.std.guice.web.HttpCallContext;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 public final class SessionScoping implements Scope
 {

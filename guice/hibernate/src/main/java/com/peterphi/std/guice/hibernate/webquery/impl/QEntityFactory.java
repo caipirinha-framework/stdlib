@@ -8,8 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.hibernate.SessionFactory;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 
-import javax.persistence.metamodel.EmbeddableType;
-import javax.persistence.metamodel.EntityType;
+import jakarta.persistence.metamodel.EmbeddableType;
+import jakarta.persistence.metamodel.EntityType;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;

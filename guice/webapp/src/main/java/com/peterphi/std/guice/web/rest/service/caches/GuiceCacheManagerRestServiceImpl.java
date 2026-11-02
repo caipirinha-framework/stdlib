@@ -12,8 +12,8 @@ import com.peterphi.std.guice.web.rest.templating.thymeleaf.GuiceCoreTemplater;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;

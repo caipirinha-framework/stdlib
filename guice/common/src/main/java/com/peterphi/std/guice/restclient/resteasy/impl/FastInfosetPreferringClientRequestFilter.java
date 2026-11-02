@@ -3,8 +3,8 @@ package com.peterphi.std.guice.restclient.resteasy.impl;
 import org.apache.commons.lang.StringUtils;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
+import jakarta.ws.rs.client.ClientRequestContext;
+import jakarta.ws.rs.client.ClientRequestFilter;
 import java.io.IOException;
 
 /**

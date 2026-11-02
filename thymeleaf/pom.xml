@@ -29,14 +29,14 @@
 	<groupId>org.thymeleaf</groupId>
 	<artifactId>thymeleaf</artifactId>
 	<packaging>jar</packaging>
-	<version>14.9.2-SNAPSHOT</version>
+	<version>15.0.0-SNAPSHOT</version>
 	<name>thymeleaf</name>
 	<description>Thymeleaf Template Engine</description>
 
 	<parent>
 		<groupId>com.peterphi.std</groupId>
 		<artifactId>stdlib-parent</artifactId>
-		<version>14.9.2-SNAPSHOT</version>
+		<version>15.0.0-SNAPSHOT</version>
 	</parent>
 
 	<properties>
@@ -95,9 +95,8 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-			<version>3.0.1</version>
+			<groupId>jakarta.servlet</groupId>
+			<artifactId>jakarta.servlet-api</artifactId>
 			<scope>provided</scope>
 		</dependency>
 

@@ -40,8 +40,8 @@ import org.hibernate.resource.transaction.spi.TransactionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.OptimisticLockException;
-import javax.persistence.PersistenceException;
+import jakarta.persistence.OptimisticLockException;
+import jakarta.persistence.PersistenceException;
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
@@ -472,7 +472,7 @@ class TransactionMethodInterceptor implements MethodInterceptor
 	/**
 	 * Special-case for SQL Server SNAPSHOT isolation level: transaction conflicts result in an exception that hibernate is not properly aware of and cannot catch.<br />
 	 * It looks like this:
-	 * <pre>javax.persistence.PersistenceException: org.hibernate.exception.SQLGrammarException: could not execute statement
+	 * <pre>jakarta.persistence.PersistenceException: org.hibernate.exception.SQLGrammarException: could not execute statement
 	 * at org.hibernate.internal.ExceptionConverterImpl.convert(ExceptionConverterImpl.java:149)
 	 * at org.hibernate.internal.ExceptionConverterImpl.convert(ExceptionConverterImpl.java:157)
 	 * at org.hibernate.internal.ExceptionConverterImpl.convert(ExceptionConverterImpl.java:164)
@@ -544,7 +544,7 @@ class TransactionMethodInterceptor implements MethodInterceptor
 	 * Special-case for SQL Server deadlock errors, that look like:
 	 * <pre>2017-12-01 07:49:48,504 ERROR Transaction (Process ID 55) was deadlocked on lock resources with another process and has been chosen as the deadlock victim. Rerun the transaction.
 	 * 2017-12-01 07:49:48,539 ERROR z9ti8f0eai POST /automation/work-orders threw exception:
-	 * javax.persistence.PersistenceException: org.hibernate.exception.LockAcquisitionException: could not execute query
+	 * jakarta.persistence.PersistenceException: org.hibernate.exception.LockAcquisitionException: could not execute query
 	 * at org.hibernate.internal.ExceptionConverterImpl.convert(ExceptionConverterImpl.java:149)
 	 * at org.hibernate.internal.ExceptionConverterImpl.convert(ExceptionConverterImpl.java:157)
 	 * at org.hibernate.query.internal.AbstractProducedQuery.list(AbstractProducedQuery.java:1423)

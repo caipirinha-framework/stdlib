@@ -2,8 +2,8 @@ package com.peterphi.std.guice.restclient.exception;
 
 import com.peterphi.std.guice.restclient.jaxb.RestFailure;
 
-import javax.ws.rs.client.ClientResponseContext;
-import javax.ws.rs.client.ResponseProcessingException;
+import jakarta.ws.rs.client.ClientResponseContext;
+import jakarta.ws.rs.client.ResponseProcessingException;
 
 public class RestException extends ResponseProcessingException
 {

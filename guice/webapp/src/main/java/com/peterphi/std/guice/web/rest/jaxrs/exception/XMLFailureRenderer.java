@@ -12,9 +12,9 @@ import com.peterphi.std.guice.restclient.jaxb.ExceptionInfo;
 import com.peterphi.std.guice.restclient.jaxb.RestFailure;
 import com.peterphi.std.guice.web.HttpCallContext;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
 
 /**
  * A simple renderer that renders an XML form of the RestFailure object by letting the JAX-RS implementation serialise it<br />

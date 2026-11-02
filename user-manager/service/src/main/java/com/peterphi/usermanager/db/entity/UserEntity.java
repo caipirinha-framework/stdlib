@@ -3,11 +3,11 @@ package com.peterphi.usermanager.db.entity;
 import org.hibernate.annotations.NaturalId;
 import org.joda.time.DateTime;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToMany;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +66,7 @@ public class UserEntity
 
 
 	@Id
-	@GeneratedValue(strategy = javax.persistence.GenerationType.IDENTITY)
+	@GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
 	public Integer getId()
 	{
 		return id;

@@ -4,8 +4,8 @@ import com.peterphi.std.guice.hibernate.webquery.impl.jpa.jpafunctions.JPAJoin;
 import com.peterphi.std.guice.hibernate.webquery.impl.jpa.jpafunctions.WQPath;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WQConstraintLine;
 
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Predicate;
 import java.util.List;
 
 public interface JPAQueryBuilderInternal

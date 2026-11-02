@@ -9,7 +9,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -31,17 +31,18 @@ public class DateTimeUserTypeVersionFieldTest
 		ObjWithDateTimeVersionField obj = new ObjWithDateTimeVersionField();
 		final DateTime initialVersion = obj.getLastUpdated();
 
-		final Long id = dao.save(obj);
-
-		obj = dao.getById(id);
+		obj = dao.merge(obj);
 
 		assertEquals("Version should be unmodified for initial store", initialVersion, obj.getLastUpdated());
 
+		obj.setSomeString("something else");
 		dao.update(obj);
+
+		obj = dao.getById(obj.getId());
 
 		final DateTime nextVersion = obj.getLastUpdated();
 
-		assertNotSame("Version should be changed after update", initialVersion, nextVersion);
+		assertNotEquals("Version should be changed after update", initialVersion, nextVersion);
 		assertTrue("Version date for later update should be later than original time", initialVersion.isBefore(nextVersion));
 	}
 }

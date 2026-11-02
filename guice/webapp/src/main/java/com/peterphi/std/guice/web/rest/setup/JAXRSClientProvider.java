@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.TypeLiteral;
 import com.peterphi.std.guice.restclient.JAXRSProxyClientFactory;
 
-import javax.inject.Provider;
+import jakarta.inject.Provider;
 
 /**
  * Builds JAX-RS Proxy Clients for interfaces using {@link com.peterphi.std.guice.restclient.JAXRSProxyClientFactory#getClient(Class)}
