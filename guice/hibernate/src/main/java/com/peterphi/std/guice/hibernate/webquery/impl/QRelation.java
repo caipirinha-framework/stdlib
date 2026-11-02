@@ -4,6 +4,9 @@ import com.google.common.base.MoreObjects;
 import com.peterphi.std.guice.restclient.jaxb.webqueryschema.WQDataType;
 import com.peterphi.std.guice.restclient.jaxb.webqueryschema.WQEntityProperty;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class QRelation
 {
 	private final QEntity owner;
@@ -12,6 +15,10 @@ public class QRelation
 	private final boolean nullable;
 	private final boolean eager;
 	private final boolean collection;
+	private final boolean schemaPrivate;
+	private final List<String> persistentPath;
+	private final boolean alias;
+	private final boolean identifierShortcut;
 
 
 	public QRelation(final QEntity owner,
@@ -22,17 +29,44 @@ public class QRelation
 	                 final boolean eager,
 	                 final boolean collection)
 	{
+		this(owner, prefix == null ? name : prefix + "." + name, entity, nullable, eager, collection, false,
+		     Arrays.asList((prefix == null ? name : prefix + "." + name).split("[.:]")), false, false);
+	}
+
+	QRelation(final QEntity owner, final String name, final QEntity entity, final boolean nullable,
+	          final boolean eager, final boolean collection, final boolean schemaPrivate,
+	          final List<String> persistentPath, final boolean alias, final boolean identifierShortcut)
+	{
 		this.owner = owner;
-
-		if (prefix != null)
-			this.name = prefix + "." + name;
-		else
-			this.name = name;
-
+		this.name = name;
 		this.entity = entity;
 		this.nullable = nullable;
 		this.eager = eager;
 		this.collection = collection;
+		this.schemaPrivate = schemaPrivate;
+		this.persistentPath = List.copyOf(persistentPath);
+		this.alias = alias;
+		this.identifierShortcut = identifierShortcut;
+	}
+
+	public boolean canUseIdentifierShortcut()
+	{
+		return identifierShortcut;
+	}
+
+	public List<String> getPersistentPath()
+	{
+		return persistentPath;
+	}
+
+	public boolean isSchemaPrivate()
+	{
+		return schemaPrivate || owner.isPathPrivate(persistentPath);
+	}
+
+	boolean isAlias()
+	{
+		return alias;
 	}
 
 

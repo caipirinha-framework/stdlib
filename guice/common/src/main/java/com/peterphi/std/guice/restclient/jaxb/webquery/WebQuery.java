@@ -1,5 +1,7 @@
 package com.peterphi.std.guice.restclient.jaxb.webquery;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.peterphi.std.annotation.Doc;
 import com.peterphi.std.guice.restclient.jaxb.webquery.plugin.WebQueryDecodePlugin;
 import org.apache.commons.lang.StringUtils;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
 @XmlRootElement(name = "WebQueryDefinition")
 @XmlType(name = "QueryDefinitionType")
 @Doc(value = "Generic Web Query", href = "https://stdlib.readthedocs.io/en/latest/framework/webquery.html")
+// These convenience getters mirror values in constraints; they are not independent input settings.
+@JsonIgnoreProperties(value = {"offset", "limit", "computeSize"}, allowGetters = true)
 public class WebQuery implements ConstraintContainer<WebQuery>, Cloneable
 {
 	private static final int QUERY_STRING_DEFAULT_LIMIT = 200;
@@ -52,6 +56,7 @@ public class WebQuery implements ConstraintContainer<WebQuery>, Cloneable
 	 * Comma-separated list of relations to fetch from the database as part of the query
 	 */
 	@XmlAttribute
+	@JsonDeserialize(using = WQPathListDeserialiser.class)
 	public String dbfetch;
 
 
@@ -59,6 +64,7 @@ public class WebQuery implements ConstraintContainer<WebQuery>, Cloneable
 	 * What relationships to expand (by default, all relationships are expanded)
 	 */
 	@XmlAttribute
+	@JsonDeserialize(using = WQPathListDeserialiser.class)
 	public String expand;
 
 	@XmlAttribute

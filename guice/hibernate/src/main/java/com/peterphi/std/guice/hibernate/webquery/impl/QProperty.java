@@ -4,6 +4,8 @@ import com.peterphi.std.guice.restclient.jaxb.webqueryschema.WQDataType;
 import com.peterphi.std.guice.restclient.jaxb.webqueryschema.WQEntityProperty;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class QProperty
 {
@@ -12,19 +14,63 @@ public class QProperty
 	protected final Class<?> clazz;
 	protected final boolean nullable;
 	protected final boolean schemaPrivate;
+	private final List<String> persistentPath;
+	private final boolean alias;
+	private final QRelation navigationRelation;
+	private final QProperty nestedProperty;
 
 	public QProperty(final QEntity entity, final String prefix, final String name, final Class<?> clazz, final boolean nullable, final boolean schemaPrivate)
 	{
+		this(entity, prefix == null ? name : prefix + ":" + name, clazz, nullable, schemaPrivate,
+		     Arrays.asList((prefix == null ? name : prefix + ":" + name).split(":")), false);
+	}
+
+	QProperty(final QEntity entity, final String name, final Class<?> clazz, final boolean nullable,
+	          final boolean schemaPrivate, final List<String> persistentPath, final boolean alias)
+	{
+		this(entity, name, clazz, nullable, schemaPrivate, persistentPath, alias, null, null);
+	}
+
+	QProperty(final QEntity entity, final String name, final QRelation navigation, final QProperty nested,
+	          final List<String> persistentPath)
+	{
+		this(entity, name, nested.getClazz(), navigation.isNullable() || nested.isNullable(),
+		     navigation.isSchemaPrivate() || nested.isSchemaPrivate(), persistentPath, true, navigation, nested);
+	}
+
+	private QProperty(final QEntity entity, final String name, final Class<?> clazz, final boolean nullable,
+	                  final boolean schemaPrivate, final List<String> persistentPath, final boolean alias,
+	                  final QRelation navigation, final QProperty nested)
+	{
 		this.entity = entity;
-
-		if (prefix != null)
-			this.name = prefix + ":" + name;
-		else
-			this.name = name;
-
+		this.name = name;
 		this.clazz = clazz;
 		this.nullable = nullable;
-		this.schemaPrivate= schemaPrivate;
+		this.schemaPrivate = schemaPrivate;
+		this.persistentPath = List.copyOf(persistentPath);
+		this.alias = alias;
+		this.navigationRelation = navigation;
+		this.nestedProperty = nested;
+	}
+
+	public QRelation getNavigationRelation()
+	{
+		return navigationRelation;
+	}
+
+	public QProperty getNestedProperty()
+	{
+		return nestedProperty;
+	}
+
+	public List<String> getPersistentPath()
+	{
+		return persistentPath;
+	}
+
+	boolean isAlias()
+	{
+		return alias;
 	}
 
 
@@ -35,7 +81,7 @@ public class QProperty
 	 */
 	public boolean isSchemaPrivate()
 	{
-		return this.schemaPrivate;
+		return this.schemaPrivate || entity.isPathPrivate(persistentPath);
 	}
 
 
@@ -46,7 +92,7 @@ public class QProperty
 	 */
 	public boolean isOmitFromSchemaDoc()
 	{
-		return this.isSchemaPrivate();
+		return this.isSchemaPrivate() || alias;
 	}
 
 	public QEntity getEntity()
