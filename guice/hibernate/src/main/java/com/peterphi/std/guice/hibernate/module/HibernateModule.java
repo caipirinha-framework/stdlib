@@ -26,9 +26,11 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
+import org.hibernate.type.CustomType;
 import org.hibernate.usertype.UserType;
 
 import java.sql.Connection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -96,7 +98,6 @@ public abstract class HibernateModule extends AbstractModule
 
 		// Set up the interceptor
 		config.setStatementInspector(interceptor);
-		properties.setProperty("hibernate.xml_mapping_enabled", "false");
 		config.addProperties(properties);
 
 
@@ -211,7 +212,13 @@ public abstract class HibernateModule extends AbstractModule
 	protected void registerTypes(final Configuration config)
 	{
 		// Map Date and DateTime types to BIGINT by default
-		registerType(config, DateUserType.INSTANCE);
+		config.registerTypeContributor((contributions, registry) -> {
+			final CustomType<Date> dateType = new CustomType<>(DateUserType.INSTANCE, contributions.getTypeConfiguration());
+			// Hibernate 7 resolves temporal precision before named basic types. Replace the
+			// Java descriptor too, preserving BIGINT storage for ordinary and version fields.
+			contributions.contributeJavaType(dateType.getJavaTypeDescriptor());
+			contributions.contributeType(dateType, Date.class.getName());
+		});
 		registerType(config, JodaDateTimeUserType.INSTANCE);
 
 		registerType(config, TimecodeUserType.INSTANCE);

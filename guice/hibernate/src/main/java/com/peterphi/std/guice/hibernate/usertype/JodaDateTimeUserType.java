@@ -147,7 +147,8 @@ public class JodaDateTimeUserType implements UserType<DateTime>, UserVersionType
 	@Override
 	public DateTime next(final DateTime current, final SharedSessionContractImplementor session)
 	{
-		return seed(session);
+		final DateTime candidate = seed(session);
+		return candidate.isAfter(current) ? candidate : current.plus(1);
 	}
 
 

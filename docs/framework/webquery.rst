@@ -15,6 +15,22 @@ Field References
 Field references are usually as simple as "relation.otherRelation.field". This will automatically create a join via "relation" and then "otherRelation" before specifying the "field" field (N.B. hibernate field naming, not database column names are used).
 See :ref:`Special Field References<SpecialFieldReferences>` for more advanced use.
 
+Embedded values use colon-separated names, for example ``address:city`` or
+``details:state``. Nested embedded values can use several segments. An old
+flattened name remains accepted when it identifies exactly one property; use
+the qualified name when two embedded values contain the same property name.
+
+``@WebQueryPrivate`` excludes a named property from constraints, ordering,
+projections and explicit fetch requests. The restriction follows overridden
+getters and private embedded containers, including shortcut paths such as
+``relation:id``. A base-type query can return subclass instances, so its schema
+also protects paths declared private by a concrete subclass. Querying a safe
+sibling or a narrower subclass uses that type's own result domain. The same
+rule applies when navigating an association targeting the base type.
+Internal default fetching and ordinary entity serialisation
+retain their application-defined behaviour; this annotation is not a JSON/XML
+serialisation policy.
+
 
 Operators
 *********
@@ -157,6 +173,45 @@ Advanced Fetching - Named Columns
 *********************************
 
 If only particular database columns are required, and not whole entities, you can set the "fetch" control parameter to a comma-separated list of fields/relations to return (for whole relations, using "relation.entity").
+
+Entity Pagination and Collection Ordering
+****************************************
+
+Entity and identifier searches count distinct root entities. Matching several
+children does not duplicate a parent's identifier or consume extra page slots.
+When a collection join or fetch affects pagination, the automatic strategy
+selects the ordered identifier page before fetching the entities and their
+requested relationships.
+
+An ascending order on a collection property uses the minimum matching value
+per entity; descending order uses the maximum. Named joins determine which
+child rows participate. Null ordering follows the database's rules. Identifier
+tie-breakers make page boundaries deterministic when requested sort values
+are equal. Projection queries retain their requested row and DISTINCT semantics.
+
+Requested relationships are loaded completely, including children that did not
+match a collection constraint. Fetching a bag together with another collection
+uses separate collection loads to avoid multiplying bag elements. This preserves
+duplicates actually stored in the bag, and may issue a secondary select per
+owner when Hibernate batching is not configured. Safe fetch graphs retain join
+fetching.
+
+Query-builder terminal operations use independent criteria trees. Selecting
+entities, identifiers, counts or projections does not change a later operation
+or a previously created Hibernate query.
+
+JSON Transport
+**************
+
+JSON constraints retain their existing shape: a constraint has ``field`` and
+``function``, while a group has ``operator`` and ``constraints``. Nested groups
+and negation do not require an added type discriminator. Paging values inside
+the root ``constraints`` object are authoritative; duplicate convenience
+``limit``, ``offset`` and ``computeSize`` fields are ignored on input.
+
+``expand`` and ``dbfetch`` accept comma-separated strings or arrays of strings.
+An empty array explicitly requests no relationships, equivalent to ``"none"``;
+null retains the default behaviour. Blank path elements are rejected.
 
 
 Query String Format

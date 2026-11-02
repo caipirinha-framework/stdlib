@@ -103,7 +103,7 @@ public class FastInfosetXmlRootElementProvider<T> extends JAXBXmlRootElementProv
 		}
 
 		// Optionally unwrap & return
-		if (obj instanceof JAXBElement<?> e)
+		if (obj instanceof JAXBElement<?> e && !clazz.equals(JAXBElement.class))
 			return clazz.cast(e.getValue());
 		else
 			return clazz.cast(obj);

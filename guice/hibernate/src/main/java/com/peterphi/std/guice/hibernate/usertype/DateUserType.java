@@ -141,7 +141,9 @@ public class DateUserType implements UserType, UserVersionType, Comparator
 	@Override
 	public Date next(final Object current, final SharedSessionContractImplementor session)
 	{
-		return seed(session);
+		final Date candidate = seed(session);
+		final Date previous = (Date) current;
+		return candidate.after(previous) ? candidate : new Date(Math.addExact(previous.getTime(), 1));
 	}
 
 
