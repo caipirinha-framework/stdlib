@@ -33,11 +33,12 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- guice -->
+		<!-- Use external ASM so Guice can read class files from newer JDKs. -->
 		<dependency>
 		  <groupId>com.google.inject</groupId>
 		  <artifactId>guice</artifactId>
 			<version>${guice.version}</version>
+			<classifier>classes</classifier>
 		</dependency>
 
 		<dependency>
@@ -49,7 +50,7 @@
 		<dependency>
 			<groupId>org.ow2.asm</groupId>
 			<artifactId>asm</artifactId>
-			<version>9.10.1</version>
+			<version>9.11.1</version>
 		</dependency>
 
 	</dependencies>
