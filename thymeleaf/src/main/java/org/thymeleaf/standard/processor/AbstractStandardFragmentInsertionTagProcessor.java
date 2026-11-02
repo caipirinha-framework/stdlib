@@ -19,6 +19,9 @@
  */
 package org.thymeleaf.standard.processor;
 
+import java.io.Writer;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.thymeleaf.IEngineConfiguration;
@@ -64,6 +67,7 @@ import java.util.Map;
 public abstract class AbstractStandardFragmentInsertionTagProcessor extends AbstractAttributeTagProcessor {
 
     public static boolean WARN_ON_DEPRECATIONS = false;
+
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractStandardFragmentInsertionTagProcessor.class);
 

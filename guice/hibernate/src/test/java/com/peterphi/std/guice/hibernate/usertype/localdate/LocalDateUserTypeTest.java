@@ -25,9 +25,7 @@ public class LocalDateUserTypeTest
 		LocalDateEntity obj = new LocalDateEntity();
 		obj.someDate = new LocalDate("2001-01-01");
 
-		final Long id = dao.save(obj);
-
-		obj = dao.getById(id);
+		obj = dao.merge(obj);
 
 		assertEquals(new LocalDate("2001-01-01"), obj.someDate);
 		assertNull(obj.someNullDate);

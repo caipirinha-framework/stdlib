@@ -23,8 +23,8 @@ package org.thymeleaf.web.servlet;
 import java.util.Collections;
 import java.util.Enumeration;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.thymeleaf.util.Validate;
 
@@ -35,13 +35,13 @@ import org.thymeleaf.util.Validate;
  * @since 3.1.0
  *
  */
-final class JavaxServletWebSession implements IServletWebSession {
+final class JakartaServletWebSession implements IServletWebSession {
 
     private final HttpServletRequest request;
     private HttpSession session;
 
 
-    JavaxServletWebSession(final HttpServletRequest request) {
+    JakartaServletWebSession(final HttpServletRequest request) {
         super();
         Validate.notNull(request, "Request cannot be null");
         this.request = request;

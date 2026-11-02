@@ -2,8 +2,8 @@ package com.peterphi.std.guice.restclient.jaxb.webquery;
 
 import org.apache.commons.lang.StringUtils;
 
-import javax.xml.bind.annotation.XmlEnum;
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlEnum;
+import jakarta.xml.bind.annotation.XmlType;
 
 /**
  * Defines the functions that an be applied to fields (data-type permitting)

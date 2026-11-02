@@ -113,8 +113,8 @@ public class DynamicQueryTest
 		toSave.setChild(new ChildEntity());
 		toSave.getChild().setName("some name");
 
-		childDao.save(toSave.getChild());
-		mappedSuperclassEntityDao.save(toSave);
+		childDao.persist(toSave.getChild());
+		mappedSuperclassEntityDao.persist(toSave);
 	}
 
 
@@ -188,8 +188,8 @@ public class DynamicQueryTest
 			obj.setOtherObject(new ChildEntity());
 			obj.getOtherObject().setName("CName1");
 
-			childDao.save(obj.getOtherObject());
-			id1 = dao.save(obj);
+			childDao.persist(obj.getOtherObject());
+			id1 = dao.merge(obj).getId();
 		}
 
 		// Load second
@@ -200,16 +200,16 @@ public class DynamicQueryTest
 			obj.setOtherObject(new ChildEntity());
 			obj.getOtherObject().setName("CName2");
 
-			childDao.save(obj.getOtherObject());
-			id2 = dao.save(obj);
+			childDao.persist(obj.getOtherObject());
+			id2 = dao.merge(obj).getId();
 		}
 
 		// Selecting a list
 		{
 			final ConstrainedResultSet<Object[]> results = dao.project(new WebQuery()
-					                                                           .fetch("id,name,otherObject.name")
-					                                                           .orderAsc("name")
-					                                                           .orderDesc("deprecated"), false);
+					                                                        .fetch("id,name,otherObject.name,otherObject.entity")
+					                                                        .orderAsc("name")
+					                                                        .orderDesc("deprecated"), false);
 
 			assertEquals("Expecting 2 rows", 2, results.getList().size());
 			assertTrue("Expecting at least 3 columns", results.getList().get(0).length >= 3);
@@ -243,8 +243,8 @@ public class DynamicQueryTest
 			obj.setOtherObject(new ChildEntity());
 			obj.getOtherObject().setName("Name1");
 
-			childDao.save(obj.getOtherObject());
-			id1 = dao.save(obj);
+			childDao.persist(obj.getOtherObject());
+			id1 = dao.merge(obj).getId();
 		}
 
 		// Load second
@@ -255,8 +255,8 @@ public class DynamicQueryTest
 			obj.setOtherObject(new ChildEntity());
 			obj.getOtherObject().setName("Name2");
 
-			childDao.save(obj.getOtherObject());
-			id2 = dao.save(obj);
+			childDao.persist(obj.getOtherObject());
+			id2 = dao.merge(obj).getId();
 		}
 
 		final ConstrainedResultSet<Object[]> results = dao.find(new WebQuery().fetch("otherObject.entity"), JPASearchStrategy.AUTO, row->(Object[])row);
@@ -290,8 +290,8 @@ public class DynamicQueryTest
 			obj.setOtherObject(new ChildEntity());
 			obj.getOtherObject().setName("Name1");
 
-			childDao.save(obj.getOtherObject());
-			id1 = dao.save(obj);
+			childDao.persist(obj.getOtherObject());
+			id1 = dao.merge(obj).getId();
 		}
 
 		// Load second
@@ -302,8 +302,8 @@ public class DynamicQueryTest
 			obj.setOtherObject(new ChildEntity());
 			obj.getOtherObject().setName("Name2");
 
-			childDao.save(obj.getOtherObject());
-			id2 = dao.save(obj);
+			childDao.persist(obj.getOtherObject());
+			id2 = dao.merge(obj).getId();
 		}
 
 		final ConstrainedResultSet<Object[]> results = dao.find(new WebQuery().fetch("name"), JPASearchStrategy.AUTO, r->(Object[])r);
@@ -381,8 +381,8 @@ public class DynamicQueryTest
 		obj.setOtherObject(new ChildEntity());
 		obj.getOtherObject().setName("Name");
 
-		childDao.save(obj.getOtherObject());
-		dao.save(obj);
+		childDao.persist(obj.getOtherObject());
+		dao.persist(obj);
 
 		final ConstrainedResultSet<ParentEntity> results = dao.find(new WebQuery(), JPASearchStrategy.ENTITY_WRAPPED_ID);
 
@@ -400,8 +400,8 @@ public class DynamicQueryTest
 		obj.setOtherObject(new ChildEntity());
 		obj.getOtherObject().setName("Name");
 
-		childDao.save(obj.getOtherObject());
-		dao.save(obj);
+		childDao.persist(obj.getOtherObject());
+		dao.persist(obj);
 
 		assertEquals(1, dao.findByUriQuery(new WebQuery().eqRef("name", "otherObject.name")).getList().size());
 		assertEquals(0, dao.findByUriQuery(new WebQuery().neqRef("name", "otherObject.name")).getList().size());
@@ -470,7 +470,7 @@ public class DynamicQueryTest
 	{
 		ParentEntity obj = new ParentEntity();
 		obj.setName("Name");
-		dao.save(obj);
+		dao.persist(obj);
 
 		assertEquals(1, dao.findByUriQuery(new WebQuery().isNull("otherObject.id")).getList().size());
 	}
@@ -480,7 +480,7 @@ public class DynamicQueryTest
 	{
 		ParentEntity obj = new ParentEntity();
 		obj.setName("Name");
-		dao.save(obj);
+		dao.persist(obj);
 
 
 		assertEquals("starts Nam = 1", 1, dao.find(new WebQuery().decode("name STARTS Nam")).getList().size());
@@ -512,12 +512,12 @@ public class DynamicQueryTest
 			ParentEntity obj1 = new ParentEntity();
 			obj1.setName("Name1");
 			obj1.setDeprecated(true);
-			dao.save(obj1);
+			dao.persist(obj1);
 
 			ParentEntity obj2 = new ParentEntity();
 			obj2.setName("Name2");
 			obj2.setDeprecated(true);
-			dao.save(obj2);
+			dao.persist(obj2);
 		}
 
 		assertEquals("deprecated=true matches 2 rows (with dao.find)",
@@ -543,11 +543,11 @@ public class DynamicQueryTest
 	{
 		ParentEntity obj1 = new ParentEntity();
 		obj1.setName("Name1");
-		dao.save(obj1);
+		dao.persist(obj1);
 
 		ParentEntity obj2 = new ParentEntity();
 		obj2.setName("Name2");
-		dao.save(obj2);
+		dao.persist(obj2);
 
 		assertEquals("regular find",
 		             getIds(Arrays.asList(obj1, obj2)),
@@ -562,11 +562,11 @@ public class DynamicQueryTest
 	{
 		ParentEntity obj1 = new ParentEntity();
 		obj1.setName("Name1");
-		dao.save(obj1);
+		dao.persist(obj1);
 
 		ParentEntity obj2 = new ParentEntity();
 		obj2.setName("Name2");
-		dao.save(obj2);
+		dao.persist(obj2);
 
 		assertEquals(getIds(Arrays.asList(obj1, obj2)), dao.getIdList(new WebQuery().orderAsc("id").fetch("id")));
 	}
@@ -578,11 +578,11 @@ public class DynamicQueryTest
 		assertNotNull(txutils.get());
 		ParentEntity obj1 = new ParentEntity();
 		obj1.setName("Name1");
-		dao.save(obj1);
+		dao.persist(obj1);
 
 		ParentEntity obj2 = new ParentEntity();
 		obj2.setName("Name2");
-		dao.save(obj2);
+		dao.persist(obj2);
 
 		assertEquals(getIds(Arrays.asList(obj1, obj2)), dao.getIdList(new WebQuery().orderAsc("id").fetch("id")));
 	}
@@ -596,11 +596,11 @@ public class DynamicQueryTest
 
 		ParentEntity obj1 = new ParentEntity();
 		obj1.setName("Name1");
-		dao.save(obj1);
+		dao.persist(obj1);
 
 		ParentEntity obj2 = new ParentEntity();
 		obj2.setName("Name2");
-		dao.save(obj2);
+		dao.persist(obj2);
 
 		final ConstrainedResultSet<ParentEntity> resultset = dao.findByUriQuery(new WebQuery()
 				                                                                        .orderAsc("id")
@@ -620,11 +620,11 @@ public class DynamicQueryTest
 	{
 		ParentEntity obj1 = new ParentEntity();
 		obj1.setName("Name1");
-		dao.save(obj1);
+		dao.persist(obj1);
 
 		ParentEntity obj2 = new ParentEntity();
 		obj2.setName("Name2");
-		dao.save(obj2);
+		dao.persist(obj2);
 
 		assertEquals(getIds(obj2, obj1), getIds(dao.findByUriQuery(new WebQuery().orderDesc("id")).getList()));
 	}
@@ -635,11 +635,11 @@ public class DynamicQueryTest
 	{
 		ParentEntity obj1 = new ParentEntity();
 		obj1.setName("Name1");
-		dao.save(obj1);
+		dao.persist(obj1);
 
 		ParentEntity obj2 = new ParentEntity();
 		obj2.setName("Name2");
-		dao.save(obj2);
+		dao.persist(obj2);
 
 		final Object[] a = (Object[]) (Object) dao.find(new WebQuery().eq("deprecated", false).fetch("id").orderAsc("name"),
 		                                                JPASearchStrategy.CUSTOM_PROJECTION).list.get(0);
@@ -697,15 +697,15 @@ public class DynamicQueryTest
 		{
 			ParentEntity obj1 = new ParentEntity();
 			obj1.setName("Name1");
-			dao.save(obj1);
+			dao.persist(obj1);
 
 			ParentEntity obj2 = new ParentEntity();
 			obj2.setName("Name2");
-			dao.save(obj2);
+			dao.persist(obj2);
 
 			ParentEntity obj3 = new ParentEntity();
 			obj3.setName("Name3");
-			dao.save(obj3);
+			dao.persist(obj3);
 		}
 
 
@@ -752,21 +752,21 @@ public class DynamicQueryTest
 		{
 			ParentEntity obj1 = new ParentEntity();
 			obj1.setName("Name1");
-			dao.save(obj1);
+			dao.persist(obj1);
 
 			ParentEntity obj2 = new ParentEntity();
 			obj2.setName("Name2");
-			dao.save(obj2);
+			dao.persist(obj2);
 
 			ChildEntity child1a = new ChildEntity();
 			child1a.setParent(obj1);
 			child1a.setName("a");
-			childDao.save(child1a);
+			childDao.persist(child1a);
 
 			ChildEntity child1b = new ChildEntity();
 			child1b.setParent(obj1);
 			child1b.setName("b");
-			childDao.save(child1b);
+			childDao.persist(child1b);
 		}
 
 		// Search for entries without constraints

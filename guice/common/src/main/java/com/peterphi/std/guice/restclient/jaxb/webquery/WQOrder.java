@@ -1,9 +1,9 @@
 package com.peterphi.std.guice.restclient.jaxb.webquery;
 
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlType;
 import org.apache.commons.lang.StringUtils;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlType;
 import java.beans.Transient;
 
 /**

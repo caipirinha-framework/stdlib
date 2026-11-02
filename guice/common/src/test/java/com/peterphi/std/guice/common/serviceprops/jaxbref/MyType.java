@@ -4,8 +4,8 @@ package com.peterphi.std.guice.common.serviceprops.jaxbref;
 import com.google.common.base.MoreObjects;
 import com.peterphi.std.guice.common.lifecycle.GuiceLifecycleListener;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "MyType")
 class MyType implements GuiceLifecycleListener

@@ -14,10 +14,10 @@ import com.peterphi.std.guice.web.rest.pagewriter.BootstrapRestFailurePageRender
 import com.peterphi.std.util.ListUtility;
 import org.apache.commons.lang.StringUtils;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;

@@ -20,19 +20,20 @@ public class TimecodeUserType implements UserType
 {
 	public static TimecodeUserType INSTANCE = new TimecodeUserType();
 
-	private static final int[] SQL_TYPES = {Types.VARCHAR};
 
 	@Override
-	public int[] sqlTypes()
+	public int getSqlType()
 	{
-		return SQL_TYPES;
+		return Types.VARCHAR;
 	}
+
 
 	@Override
 	public Class returnedClass()
 	{
 		return Timecode.class;
 	}
+
 
 	@Override
 	public boolean equals(Object x, Object y) throws HibernateException
@@ -51,26 +52,28 @@ public class TimecodeUserType implements UserType
 		}
 	}
 
+
 	@Override
 	public int hashCode(final Object x) throws HibernateException
 	{
 		return x.hashCode();
 	}
 
+
 	@Override
 	public Timecode nullSafeGet(final ResultSet resultSet,
-	                            final String[] names,
+	                            final int position,
 	                            final SharedSessionContractImplementor session,
 	                            final Object owner) throws HibernateException, SQLException
 	{
-		final String encoded = resultSet.getString(names[0]);
+		final String encoded = resultSet.getString(position);
 
 		if (resultSet.wasNull())
 			return null;
 		else
 			return Timecode.getInstance(encoded);
-
 	}
+
 
 	@Override
 	public void nullSafeSet(final PreparedStatement statement,
@@ -90,17 +93,20 @@ public class TimecodeUserType implements UserType
 		}
 	}
 
+
 	@Override
 	public Timecode deepCopy(Object value) throws HibernateException
 	{
 		return (Timecode) value; // immutable type
 	}
 
+
 	@Override
 	public boolean isMutable()
 	{
 		return false;
 	}
+
 
 	@Override
 	public Serializable disassemble(final Object value) throws HibernateException
@@ -111,6 +117,7 @@ public class TimecodeUserType implements UserType
 			return ((Timecode) value).toEncodedString();
 	}
 
+
 	@Override
 	public Object assemble(final Serializable cached, final Object owner) throws HibernateException
 	{
@@ -119,6 +126,7 @@ public class TimecodeUserType implements UserType
 		else
 			return Timecode.getInstance((String) cached);
 	}
+
 
 	@Override
 	public Timecode replace(final Object original, final Object target, final Object owner) throws HibernateException

@@ -112,7 +112,7 @@ public class EntityCollectionTest
 
 			assertEquals("constraining query should have 2 independent joins to Child",
 			             2,
-			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left outer join child_entity"));
+			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left join child_entity"));
 		}
 	}
 
@@ -139,9 +139,9 @@ public class EntityCollectionTest
 			assertEquals("Should have 2 result match", 2, resultset.getList().size());
 			assertEquals("Should need 2 SQL statements", 2, resultset.getSql().size());
 
-			assertEquals("constraining query should have 1 join to Child",
+			assertEquals("constraining query should have 1 join to Child in: " + resultset.getSql().get(0),
 			             1,
-			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left outer join child_entity"));
+			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left join child_entity"));
 		}
 	}
 
@@ -170,7 +170,7 @@ public class EntityCollectionTest
 
 			assertEquals("constraining query should have 1 join to Child",
 			             1,
-			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left outer join child_entity"));
+			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left join child_entity"));
 		}
 	}
 
@@ -333,27 +333,38 @@ public class EntityCollectionTest
 	@Transactional
 	public List<Long> load()
 	{
+		// Remove all existing rows
+		for (ParentEntity p : dao.getAll())
+		{
+			dao.delete(p);
+		}
+		for (ChildEntity c : rDao.getAll())
+		{
+			rDao.delete(c);
+		}
+
+
 		List<Long> parentIds = new ArrayList<>();
 
 		{
 			ParentEntity p1 = new ParentEntity();
 			p1.setCapacity(2);
-			p1.setId(dao.save(p1));
+			p1 = dao.merge(p1);
 
 			ChildEntity c1 = new ChildEntity();
 			c1.setParent(p1);
 			c1.setFlag(true);
-			c1.setId(rDao.save(c1));
+			c1 = rDao.merge(c1);
 
 			ChildEntity c2 = new ChildEntity();
 			c2.setParent(p1);
 			c2.setFlag(true);
-			c2.setId(rDao.save(c2));
+			c2 = rDao.merge(c2);
 
 			ChildEntity c3 = new ChildEntity();
 			c3.setParent(p1);
 			c3.setFlag(false);
-			c3.setId(rDao.save(c3));
+			c3 = rDao.merge(c3);
 
 			parentIds.add(p1.getId());
 		}
@@ -362,22 +373,22 @@ public class EntityCollectionTest
 		{
 			ParentEntity p2 = new ParentEntity();
 			p2.setCapacity(2);
-			p2.setId(dao.save(p2));
+			p2 = dao.merge(p2);
 
 			ChildEntity c1 = new ChildEntity();
 			c1.setParent(p2);
 			c1.setFlag(true);
-			c1.setId(rDao.save(c1));
+			c1 = rDao.merge(c1);
 
 			ChildEntity c2 = new ChildEntity();
 			c2.setParent(p2);
 			c2.setFlag(true);
-			c2.setId(rDao.save(c2));
+			c2 = rDao.merge(c2);
 
 			ChildEntity c3 = new ChildEntity();
 			c3.setParent(p2);
 			c3.setFlag(false);
-			c3.setId(rDao.save(c3));
+			c3 = rDao.merge(c3);
 
 			parentIds.add(p2.getId());
 		}
@@ -425,13 +436,13 @@ public class EntityCollectionTest
 	public void testFilledDb() throws Exception
 	{
 		// Find a Q where 0 != count(child.flag=false) AND q.capacity > count(r.flag=true)
-		final String query = "SELECT q.id FROM parent_entity q WHERE q.capacity > (SELECT COUNT(r.id) FROM child_entity r WHERE r.parent=q.id AND r.flag=true) AND 0 <> (SELECT COUNT(r.id) FROM child_entity r WHERE r.parent=q.id AND r.flag=false)";
+		final String query = "SELECT q.id FROM parent_entity q WHERE q.capacity > (SELECT COUNT(r.id) FROM child_entity r WHERE r.parent.id=q.id AND r.flag=true) AND 0 <> (SELECT COUNT(r.id) FROM child_entity r WHERE r.parent.id=q.id AND r.flag=false)";
 
 		ParentEntity p1;
 		{
 			p1 = new ParentEntity();
 			p1.setCapacity(2);
-			p1 = dao.getById(dao.save(p1));
+			p1 = dao.merge(p1);
 		}
 
 		List<Long> ids;
@@ -444,7 +455,7 @@ public class EntityCollectionTest
 			r.setParent(p1);
 			r.setFlag(true);
 
-			rDao.save(r);
+			rDao.persist(r);
 		}
 
 		ids = dao.getIdsByQuery(query);
@@ -455,7 +466,7 @@ public class EntityCollectionTest
 			r.setParent(p1);
 			r.setFlag(false);
 
-			rDao.save(r);
+			rDao.persist(r);
 		}
 
 		// One Q should match now
@@ -468,13 +479,13 @@ public class EntityCollectionTest
 			r.setParent(p1);
 			r.setFlag(true);
 
-			rDao.save(r);
+			rDao.persist(r);
 		}
 
 		// Now none should match again
 
 		ids = dao.getIdsByQuery(
-				"SELECT q.id FROM parent_entity q WHERE q.capacity > (SELECT COUNT(r.id) FROM child_entity r WHERE r.parent=q.id AND r.flag=true) AND (SELECT COUNT(r.id) FROM child_entity r WHERE r.parent=q.id AND r.flag=false) <> 0");
+				"SELECT q.id FROM parent_entity q WHERE q.capacity > (SELECT COUNT(r.id) FROM child_entity r WHERE r.parent.id=q.id AND r.flag=true) AND (SELECT COUNT(r.id) FROM child_entity r WHERE r.parent.id=q.id AND r.flag=false) <> 0");
 
 		assertEquals(0, ids.size());
 	}

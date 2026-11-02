@@ -10,7 +10,7 @@ import freemarker.template.Configuration;
 import freemarker.template.DefaultObjectWrapper;
 import freemarker.template.Version;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 import java.net.URI;
 
 public class FreemarkerModule extends AbstractModule

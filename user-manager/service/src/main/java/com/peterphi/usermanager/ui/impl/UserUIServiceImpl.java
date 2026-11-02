@@ -21,9 +21,10 @@ import com.peterphi.usermanager.service.UserDeleteService;
 import com.peterphi.usermanager.ui.api.UserUIService;
 import org.apache.commons.lang.StringUtils;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;

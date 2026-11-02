@@ -1,8 +1,8 @@
 package com.peterphi.usermanager.service;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 /**
  * Thrown when a login attempt is refused because the account has exceeded the permitted number of

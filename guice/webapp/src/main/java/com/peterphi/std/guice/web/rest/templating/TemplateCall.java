@@ -1,6 +1,6 @@
 package com.peterphi.std.guice.web.rest.templating;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.Writer;
 import java.util.Map;
 

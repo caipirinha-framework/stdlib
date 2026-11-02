@@ -19,4 +19,11 @@ public class ParentDao extends HibernateDao<ParentEntity, Long>
 	{
 		return (List<ParentEntity>) getList(createReadQuery(query));
 	}
+
+
+	@Transactional
+	public int runUpdateHQL(final String hql)
+	{
+		return createWriteQuery(hql).executeUpdate();
+	}
 }

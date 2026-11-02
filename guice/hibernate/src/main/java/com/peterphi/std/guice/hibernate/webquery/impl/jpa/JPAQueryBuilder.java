@@ -13,44 +13,59 @@ import com.peterphi.std.guice.restclient.jaxb.webquery.WQGroup;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WQGroupType;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WQOrder;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WebQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Fetch;
+import jakarta.persistence.criteria.From;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Order;
+import jakarta.persistence.criteria.ParameterExpression;
+import jakarta.persistence.criteria.Path;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Selection;
+import jakarta.persistence.metamodel.ManagedType;
 import org.apache.commons.lang.StringUtils;
-import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
+import org.hibernate.query.sqm.tree.SqmCopyContext;
+import org.hibernate.query.sqm.tree.SqmNode;
+import org.hibernate.query.sqm.tree.from.SqmFrom;
+import org.hibernate.query.sqm.tree.from.SqmAttributeJoin;
+import org.hibernate.query.sqm.tree.select.SqmSortSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Fetch;
-import javax.persistence.criteria.JoinType;
-import javax.persistence.criteria.Order;
-import javax.persistence.criteria.ParameterExpression;
-import javax.persistence.criteria.Path;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import javax.persistence.criteria.Selection;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Builds entity queries with one identifier per matched entity before pagination.
+ * Collection sort keys use their minimum matching value for ascending order and
+ * maximum for descending order; identifier ties make page boundaries stable.
+ * Explicit projections retain their requested row and DISTINCT semantics.
+ */
 public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 {
 	private static final Logger log = LoggerFactory.getLogger(JPAQueryBuilder.class);
+	private static final AtomicLong SNAPSHOT_ALIASES = new AtomicLong();
 
-	private record OrderExpr( Order order,  WQOrder src){}
+	private record OrderExpr(Order order, WQOrder src, boolean collection) {}
 
 	private final Session session;
 	private final CriteriaBuilder criteriaBuilder;
 
+	private final QEntity initialEntity;
 	private QEntity entity;
 	private Root root;
 
@@ -67,13 +82,16 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 	private Set<String> fetches;
 
 	private final Map<ParameterExpression, Object> params = new HashMap<>();
+	private final Map<Expression<?>, Class<?>> propertyTypes = new IdentityHashMap<>();
 
 	private boolean permitSchemaPrivate = false;
+	private boolean terminalSnapshot;
 
 	public JPAQueryBuilder(final Session session, final QEntity entity, final boolean defaultPermitSchemaPrivate)
 	{
 		this.session = session;
 		this.criteriaBuilder = session.getCriteriaBuilder();
+		this.initialEntity = entity;
 		this.entity = entity;
 		this.permitSchemaPrivate = defaultPermitSchemaPrivate;
 	}
@@ -194,7 +212,10 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 	{
 		final JPAJoin join = getOrCreateJoin(path.getTail());
 
-		return join.property(path.getHead().getPath(), permitSchemaPrivate);
+		final String name = path.getHead().getPath();
+		final Expression<?> expression = join.property(name, permitSchemaPrivate);
+		propertyTypes.put(expression, join.getPropertyType(name, permitSchemaPrivate));
+		return expression;
 	}
 
 
@@ -215,7 +236,7 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 		{
 			final JPAJoin parent = getOrCreateJoin(path.getTail());
 
-			final JPAJoin join = parent.join(path.getHead().getPath());
+			final JPAJoin join = parent.join(path.getHead().getPath(), permitSchemaPrivate);
 
 			joins.put(path.getPath(), join);
 
@@ -258,9 +279,9 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 			case EQ:
 				return criteriaBuilder.equal(property, parse(property, line.value));
 			case NOT_IN:
-				return criteriaBuilder.not(property.in(param(parseValueList(property, line.valuelist))));
+				return criteriaBuilder.not(property.in(parseValueList(property, line.valuelist)));
 			case IN:
-				return property.in(param(parseValueList(property, line.valuelist)));
+				return property.in(parseValueList(property, line.valuelist));
 			case NEQ:
 				return criteriaBuilder.notEqual(property, parse(property, line.value));
 			case CONTAINS:
@@ -323,10 +344,8 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 
 	private Object parseValue(final Expression property, final String value)
 	{
-		final Class clazz = property.getJavaType();
-		return WQTypeHelper.parse(clazz, value);
+		return WQTypeHelper.parse(propertyTypes.getOrDefault(property, property.getJavaType()), value);
 	}
-
 
 	private Predicate parseConstraint(final WQGroup group)
 	{
@@ -341,7 +360,7 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 					                         .map(l -> parseValue(property, ((WQConstraint) l).value))
 					                         .toList();
 
-			final Predicate expr = property.in(param(ids));
+			final Predicate expr = property.in(ids);
 
 			if (group.operator == WQGroupType.OR)
 				return expr;
@@ -427,11 +446,10 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 	}
 
 
+	/** Initialise a new query, discarding all state from any previous query on this builder. */
 	public void forWebQuery(final WebQuery query)
 	{
-		this.params.clear();
-		this.generated = criteriaBuilder.createQuery();
-		this.generated.distinct(false);
+		reset();
 
 		// Add FROM (N.B. adding support for subclass queries)
 		addFrom(query.constraints.subclass);
@@ -449,80 +467,142 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 
 	private void addExpandAndFetches(final WebQuery query)
 	{
-		// Clear all fetches and graphs first
-		this.fetches = null;
-
+		this.fetches = new HashSet<>();
 		if (StringUtils.equals(query.fetch, "id"))
+			return;
+
+		Set<String> explicit = query.getDBFetch();
+		final boolean expand = explicit == null;
+		if (expand)
+			explicit = query.getExpand();
+
+		if (explicit == null || (expand && explicit.size() == 1 && explicit.contains("all")))
 		{
-			// Only wants the ID, so set up a fetch graph with nothing else in it
-			this.fetches = new HashSet<>();
+			addDefaultFetches();
+			return;
 		}
-		else
+
+		for (String path : explicit)
 		{
-			final Set<String> queryFetch = query.getDBFetch();
-			final Set<String> queryExpand = query.getExpand();
-
-			// If dbfetch is specified then use that first
-			if (queryFetch != null)
-			{
-				this.fetches = queryFetch;
-
-				// Allow a special value of "none" to be used
-				this.fetches.remove("none");
-			}
-			// Fall back on expand
-			else if (queryExpand != null)
-			{
-				this.fetches = queryExpand;
-
-				// Allow a special values of "-idcollections" and "-collections" to be used (ignored here currently, but usable in serialisers)
-				this.fetches.remove("none"); // Allow a special value of "none" to be used
-				this.fetches.removeIf(v -> v.charAt(0) == '-');
-
-				// Treat expand=all (coming from older API clients) as if expand was not specified
-				if (this.fetches.size() == 1 && this.fetches.contains("all"))
-					this.fetches = null;
-			}
-
-
-			// Fall back on entity default if a fetch/expand is unspecified, or if it is set to _default
-			if (this.fetches == null)
-			{
-				this.fetches = entity.getEagerFetch();
-			}
-			else if (this.fetches.contains("_default"))
-			{
-				this.fetches.remove("_default");
-				this.fetches.addAll(entity.getEagerFetch());
-			}
+			if ("none".equals(path) || "_default".equals(path) || (expand && path.startsWith("-")))
+				continue;
+			fetches.add(entity.resolveFetchPath(path, permitSchemaPrivate));
 		}
+		if (explicit.contains("_default"))
+			addDefaultFetches();
 	}
 
 
+	private void addDefaultFetches()
+	{
+		// Internal eager mappings apply even to schema-private relations. User-named
+		// fetch paths above still require the caller's normal property privileges.
+		for (String path : entity.getEagerFetch())
+			fetches.add(entity.resolveFetchPath(path, true));
+	}
+
+	private void reset()
+	{
+		entity = initialEntity;
+		conditions.clear();
+		orders.clear();
+		joins.clear();
+		params.clear();
+		propertyTypes.clear();
+		fetches = null;
+		offset = null;
+		limit = null;
+		generated = criteriaBuilder.createQuery();
+		generated.distinct(false);
+	}
+
+
+	/**
+	 * Terminal operations work on independent criteria trees. Native Hibernate does
+	 * not copy criteria by default, so sharing a tree also mutates previously created
+	 * Query objects, not just later builder results.
+	 */
+	private JPAQueryBuilder<T, ID> snapshot()
+	{
+		final SqmCopyContext context = SqmCopyContext.noParamCopyContext();
+		final JPAQueryBuilder<T, ID> copy = new JPAQueryBuilder<>(session, initialEntity, permitSchemaPrivate);
+		copy.entity = entity;
+		copy.generated = copyNode(generated, context);
+		copy.root = copyNode(root, context);
+		for (Predicate condition : conditions)
+			copy.conditions.add(copyNode(condition, context));
+		for (OrderExpr order : orders)
+			copy.orders.add(new OrderExpr(((SqmSortSpecification) order.order()).copy(context), order.src().clone(), order.collection()));
+		joins.forEach((name, join) -> copy.joins.put(name, join.withRoot(copyNode((From<?, ?>) join.getJoinExpression(), context))));
+		params.forEach((parameter, value) -> copy.params.put(copyNode(parameter, context), value));
+		propertyTypes.forEach((expression, type) -> copy.propertyTypes.put(copyNode(expression, context), type));
+		copy.fetches = fetches == null ? null : new HashSet<>(fetches);
+		copy.offset = offset;
+		copy.limit = limit;
+		copy.terminalSnapshot = true;
+		copy.isolateJoinAliases();
+		return copy;
+	}
+
+
+	private void isolateJoinAliases()
+	{
+		final List<SqmFrom<?, ?>> froms = new ArrayList<>();
+		final Set<SqmFrom<?, ?>> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+		for (Object queryRoot : generated.getRoots())
+			collectFroms((SqmFrom<?, ?>) queryRoot, froms, seen);
+
+		// Hibernate copies existing joins but not From's alias counter. New joins
+		// would otherwise reuse copied aliases/NavigablePaths and can turn a full
+		// collection fetch into its filtered join. A disjoint parent namespace also
+		// covers direct joins/fetches added by custom Criteria callbacks.
+		String prefix;
+		do
+		{
+			prefix = "var_wq_copy_" + SNAPSHOT_ALIASES.incrementAndGet() + "_";
+		}
+		while (containsAliasPrefix(froms, prefix));
+		for (int i = 0; i < froms.size(); i++)
+			froms.get(i).setExplicitAlias(prefix + i);
+	}
+
+
+	private static boolean containsAliasPrefix(List<SqmFrom<?, ?>> froms, String prefix)
+	{
+		return froms.stream().anyMatch(from -> (from.getExplicitAlias() != null && from.getExplicitAlias().startsWith(prefix)) ||
+		                                      from.getNavigablePath().getFullPath().contains(prefix));
+	}
+
+
+	private static void collectFroms(SqmFrom<?, ?> from, List<SqmFrom<?, ?>> result, Set<SqmFrom<?, ?>> seen)
+	{
+		if (!seen.add(from))
+			return;
+		result.add(from);
+		for (var join : from.getSqmJoins())
+			collectFroms(join, result, seen);
+		for (var treated : from.getSqmTreats())
+			collectFroms(treated, result, seen);
+	}
+
+
+	@SuppressWarnings("unchecked")
+	private static <N> N copyNode(N node, SqmCopyContext context)
+	{
+		return (N) ((SqmNode) node).copy(context);
+	}
+
+
+	/**
+	 * Build an unpaginated fetch for an already selected ID page. The executor restores
+	 * the first query's ID order after fetching, so collection joins cannot reorder it.
+	 */
 	public void forIDs(final WebQuery original, final List<?> ids)
 	{
-		this.params.clear();
-		this.generated = criteriaBuilder.createQuery();
-		this.generated.distinct(false);
-
+		reset();
+		addFrom(original == null ? null : original.constraints.subclass);
 		if (original != null)
-		{
-			addFrom(original.constraints.subclass);
-
-			// Re-state the order (so intra-page order is still correct, since otherwise it'll be whatever order the database decides to return)
-			addOrders(original.orderings);
-
-			// Make sure we eagerly fetch what's requested
 			addExpandAndFetches(original);
-
-			// Don't set an offset or limit when selecting specific IDs
-			this.offset = null;
-			this.limit = null;
-		}
-		else
-		{
-			addFrom(null);
-		}
 
 		if (root.getModel().hasSingleIdAttribute())
 		{
@@ -530,7 +610,7 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 
 			final Path id = root.get(root.getModel().getId(idClass));
 
-			generated.where(id.in(param(ids)));
+			addConstraints(id.in(ids));
 		}
 		else
 		{
@@ -549,19 +629,15 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 
 	public List<ID> selectIDs()
 	{
-		Query<ID> query = createSelectIDs();
-
-		List<?> results = query.getResultList();
-
-		if (results.isEmpty())
-			return Collections.emptyList();
-		else if (results.get(0).getClass().isArray())
-			// N.B. we explicitly do not remove duplicates because the only case of duplicates appearing should be if ordering by a collection
-			return (List<ID>) results.stream().map(r -> Array.get(r, 0)).toList();
-		else
-			return (List<ID>) results;
+		return createSelectIDs().getResultList();
 	}
 
+
+	/** Internal entity pagination does not expose identifiers as query results. */
+	List<ID> selectIDsForEntityPage()
+	{
+		return snapshot().buildSelectIDs(false).getResultList();
+	}
 
 	public List<Object[]> selectCustomProjection(final boolean distinct, String... fields)
 	{
@@ -577,6 +653,26 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 
 	public List<T> selectEntity()
 	{
+		if (hasCollectionOrder() || ((offset != null || limit != null) && (hasCollectionJoin() || hasCollectionFetch())))
+		{
+			final List<ID> ids = selectIDsForEntityPage();
+			if (ids.isEmpty())
+				return Collections.emptyList();
+			final JPAQueryBuilder<T, ID> entityBuilder = new JPAQueryBuilder<>(session, entity, permitSchemaPrivate);
+			entityBuilder.forIDs(null, ids);
+			entityBuilder.fetches = fetches == null ? null : new HashSet<>(fetches);
+			// Native TREAT paths retain their typed attributes. Initialise them only
+			// after configured parent collections have finished hydrating.
+			final JPAFetchPlan nativeFetches = new JPAFetchPlan(root.getModel(), null, directFetchPaths());
+			final Map<Object, T> byId = new HashMap<>();
+			final var identifiers = session.getSessionFactory().getPersistenceUnitUtil();
+			for (T value : entityBuilder.selectEntity())
+			{
+				nativeFetches.initialise(value);
+				byId.put(identifiers.getIdentifier(value), value);
+			}
+			return ids.stream().filter(byId::containsKey).map(byId::get).toList();
+		}
 		final Query<T> query = createSelectEntity();
 
 		return query.getResultList();
@@ -585,11 +681,21 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 
 	public Query<Long> createSelectCount()
 	{
+		return snapshot().buildSelectCount();
+	}
+
+
+	private Query<Long> buildSelectCount()
+	{
+		clearEntityFetches();
 		final Query<Long> query;
 		{
 			final CriteriaQuery<Long> cq = generated;
 			cq.orderBy(List.of()); // Order is not meaningful for a count query
-			cq.select(criteriaBuilder.count(root));
+			cq.groupBy(List.of());
+			cq.having();
+			cq.distinct(false);
+			cq.select(criteriaBuilder.countDistinct(root));
 
 			query = session.createQuery(cq);
 		}
@@ -614,6 +720,12 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 
 	public <C> Query<C> createSelectCustom(JPAQueryCustomiser customiser)
 	{
+		return snapshot().buildSelectCustom(customiser);
+	}
+
+
+	private <C> Query<C> buildSelectCustom(JPAQueryCustomiser customiser)
+	{
 		final Query<C> query;
 		{
 			final CriteriaQuery<C> cq = generated;
@@ -624,9 +736,9 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 		}
 
 		if (offset != null)
-			query.getQueryOptions().setFirstRow(offset);
+			query.setFirstResult(offset);
 		if (limit != null)
-			query.getQueryOptions().setMaxRows(limit);
+			query.setMaxResults(limit);
 
 		// Set all the parameters
 		for (Map.Entry<ParameterExpression, Object> entry : this.params.entrySet())
@@ -640,6 +752,13 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 
 	public Query<Object[]> createSelectCustomProjection(final boolean distinct, String[] fields)
 	{
+		return snapshot().buildSelectCustomProjection(distinct, fields);
+	}
+
+
+	private Query<Object[]> buildSelectCustomProjection(final boolean distinct, String[] fields)
+	{
+		clearEntityFetches();
 		final Query<Object[]> query;
 		{
 			final CriteriaQuery<Object[]> cq = generated;
@@ -651,9 +770,9 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 			for (String field : fields)
 				selects.add(getProperty(field));
 
+			cq.distinct(distinct);
 			if (distinct)
 			{
-				cq.distinct(true);
 
 				if (!orders.isEmpty())
 				{
@@ -674,9 +793,9 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 		}
 
 		if (offset != null)
-			query.getQueryOptions().setFirstRow(offset);
+			query.setFirstResult(offset);
 		if (limit != null)
-			query.getQueryOptions().setMaxRows(limit);
+			query.setMaxResults(limit);
 
 		// Set all the parameters
 		for (Map.Entry<ParameterExpression, Object> entry : this.params.entrySet())
@@ -690,58 +809,150 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 
 	public Query<ID> createSelectIDs()
 	{
-		final Query<ID> query;
-		{
-			final CriteriaQuery<ID> cq = generated;
-			cq.orderBy(orders.stream().map(OrderExpr :: order).toList()); // Make sure we return the results in the correct order
+		return snapshot().buildSelectIDs(true);
+	}
 
-			if (root.getModel().hasSingleIdAttribute())
+
+	private Query<ID> buildSelectIDs(boolean exposeIdentifier)
+	{
+		clearEntityFetches();
+		if (exposeIdentifier)
+			entity.assertIdentifierAccessible(permitSchemaPrivate);
+		if (!root.getModel().hasSingleIdAttribute())
+			throw new NotImplementedException("Cannot handle ID selection with IdClass!");
+
+		final CriteriaQuery<ID> cq = generated;
+		final var idAttribute = root.getModel().getId(root.getModel().getIdType().getJavaType());
+		final Expression<ID> id = root.get(idAttribute);
+		cq.select(id);
+
+		final List<Order> idOrders = new ArrayList<>(orders.size() + 1);
+		final List<Expression<?>> groups = new ArrayList<>();
+		groups.add(id);
+		for (OrderExpr order : orders)
+		{
+			Expression<?> expression = order.order().getExpression();
+			if (order.collection())
 			{
-				final var idAttr = root.getModel().getId(root.getModel().getIdType().getJavaType());
-				cq.select(root.get(idAttr));
+				// One entity may have many matching child values. Ascending sorts use
+				// the minimum and descending sorts the maximum, before applying limits.
+				expression = aggregateOrder(expression, order.src());
+			}
+			else if (!order.src().field.endsWith(":size") && !groups.contains(expression))
+			{
+				// Collection sizes are correlated subqueries, not legal GROUP BY expressions.
+				groups.add(expression);
+			}
+			idOrders.add(order.src().isAsc() ? criteriaBuilder.asc(expression) : criteriaBuilder.desc(expression));
+		}
+		cq.distinct(false);
+		cq.groupBy(List.of());
+		cq.having();
+		final boolean projectOrderingColumns = hasCollectionJoin() && !hasCollectionOrder();
+		if (hasCollectionOrder())
+			cq.groupBy(groups);
+		else if (projectOrderingColumns)
+		{
+			// Scalar sort values are fixed for each entity. Selecting them alongside
+			// its ID keeps DISTINCT portable to databases requiring ORDER BY in SELECT.
+			final List<Selection<?>> selections = new ArrayList<>();
+			selections.add(id);
+			for (OrderExpr order : orders)
+				if (!selections.contains(order.order().getExpression()))
+					selections.add(order.order().getExpression());
+			if (selections.size() == 1)
+			{
+				// HSQLDB 2.7.4 can apply OFFSET before single-column DISTINCT.
+				// A non-empty aggregate group preserves entity page boundaries.
+				cq.groupBy(id);
+				cq.having(criteriaBuilder.gt(criteriaBuilder.count(root), 0L));
 			}
 			else
 			{
-				throw new NotImplementedException("Cannot handle ID selection with IdClass!");
+				cq.multiselect(selections);
+				cq.distinct(true);
 			}
-
-			query = session.createQuery(cq);
 		}
 
+		// Stable page boundaries also need a tie-breaker when requested sort values match.
+		if (orders.stream().noneMatch(order -> "id".equals(order.src().field)))
+			idOrders.add(criteriaBuilder.asc(id));
+		cq.orderBy(idOrders);
+
+		final Query<ID> query = projectOrderingColumns
+				? session.createQuery(cq).setTupleTransformer((tuple, aliases) -> (ID) tuple[0])
+				: session.createQuery(cq);
 		if (offset != null)
-			query.getQueryOptions().setFirstRow(offset);
+			query.setFirstResult(offset);
 		if (limit != null)
-			query.getQueryOptions().setMaxRows(limit);
-
-		// Set all the parameters
-		for (Map.Entry<ParameterExpression, Object> entry : this.params.entrySet())
-		{
+			query.setMaxResults(limit);
+		for (Map.Entry<ParameterExpression, Object> entry : params.entrySet())
 			query.setParameter(entry.getKey(), entry.getValue());
-		}
-
 		return query;
 	}
 
 
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private Expression<?> aggregateOrder(Expression<?> expression, WQOrder order)
+	{
+		final Class<?> type = expression.getJavaType();
+		if (type == boolean.class || type == Boolean.class)
+		{
+			final Expression<Integer> encoded = criteriaBuilder.<Integer>selectCase()
+					.when(criteriaBuilder.isTrue((Expression<Boolean>) expression), 1)
+					.when(criteriaBuilder.isFalse((Expression<Boolean>) expression), 0)
+					.otherwise((Integer) null);
+			return order.isAsc() ? criteriaBuilder.min(encoded) : criteriaBuilder.max(encoded);
+		}
+		return order.isAsc() ? criteriaBuilder.least((Expression) expression) : criteriaBuilder.greatest((Expression) expression);
+	}
+
+	/**
+	 * Create a native Hibernate query. Its pagination uses native query semantics;
+	 * use selectEntity() for entity pages when collection joins multiply SQL rows.
+	 */
 	public Query<T> createSelectEntity()
 	{
+		return snapshot().buildSelectEntity();
+	}
+
+
+	private Query<T> buildSelectEntity()
+	{
+		final JPAFetchPlan fetchPlan = new JPAFetchPlan(root.getModel(), fetches, directFetchPaths());
+		final boolean separateFetches = fetchPlan.requiresSeparateLoading() || (hasCollectionJoin(false) && hasListOrCollectionFetch());
 		final Query<T> query;
 		{
 			generated.select(root);
 
-			applyFetches();
+			if (separateFetches)
+				clearEntityFetches();
+			else
+				applyFetches();
 
-			generated.orderBy(orders.stream().map(OrderExpr :: order).toList());
+			final List<Order> entityOrders = new ArrayList<>(orders.stream().map(OrderExpr::order).toList());
+			if ((offset != null || limit != null) && orders.stream().noneMatch(order -> "id".equals(order.src().field)))
+			{
+				final var idAttribute = root.getModel().getId(root.getModel().getIdType().getJavaType());
+				entityOrders.add(criteriaBuilder.asc(root.get(idAttribute)));
+			}
+			generated.orderBy(entityOrders);
 
 			query = session.createQuery(generated);
 		}
 
 		if (offset != null)
-			query.getQueryOptions().setFirstRow(offset);
+			query.setFirstResult(offset);
 		if (limit != null)
-			query.getQueryOptions().setMaxRows(limit);
+			query.setMaxResults(limit);
 
-		query.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		// Hibernate 6+ removes duplicate entity results introduced by fetch joins.
+		if (separateFetches)
+			query.setTupleTransformer((values, aliases) -> {
+				final T value = (T) values[0];
+				fetchPlan.initialise(value);
+				return value;
+			});
 
 		// Set all the parameters
 		for (Map.Entry<ParameterExpression, Object> entry : this.params.entrySet())
@@ -756,8 +967,17 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 	@Override
 	public void applyFetches()
 	{
-		if (fetches != null)
+		// Public calls on the reusable builder defer materialisation to a terminal
+		// snapshot. Custom callbacks already receive that snapshot and apply now.
+		if (terminalSnapshot && fetches != null)
 			addFetches(fetches);
+	}
+
+
+	/** Whether an ordering crosses a collection and therefore needs one value per root entity. */
+	public boolean hasCollectionOrder()
+	{
+		return orders.stream().anyMatch(OrderExpr::collection);
 	}
 
 
@@ -768,13 +988,27 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 	 */
 	public boolean hasCollectionJoin()
 	{
-		for (JPAJoin join : joins.values())
-		{
-			if (join.isCollection())
-				return true;
-		}
+		return hasCollectionJoin(true);
+	}
 
-		return false;
+
+	private boolean hasCollectionJoin(boolean includeFetches)
+	{
+		final List<SqmFrom<?, ?>> froms = new ArrayList<>();
+		collectFroms((SqmFrom<?, ?>) root, froms, Collections.newSetFromMap(new IdentityHashMap<>()));
+		return froms.stream().anyMatch(from -> from instanceof SqmAttributeJoin<?, ?> join &&
+		                                    join.getAttribute().isCollection() && (includeFetches || !join.isFetched()));
+	}
+
+
+	/** Keep explicit join predicates usable when the terminal result is not an entity. */
+	private void clearEntityFetches()
+	{
+		final List<SqmFrom<?, ?>> froms = new ArrayList<>();
+		collectFroms((SqmFrom<?, ?>) root, froms, Collections.newSetFromMap(new IdentityHashMap<>()));
+		for (SqmFrom<?, ?> from : froms)
+			if (from instanceof SqmAttributeJoin<?, ?> join)
+				join.clearFetched();
 	}
 
 
@@ -829,9 +1063,20 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 	}
 
 
+	/**
+	 * Lists and plain Collections may be bags, whose fetched rows are not deduplicated
+	 * by Hibernate. Isolate their fetch from matching collection joins even without a
+	 * limit. Indexed lists are conservatively handled the same way.
+	 */
+	public boolean hasListOrCollectionFetch()
+	{
+		return new JPAFetchPlan(root.getModel(), fetches, directFetchPaths()).hasListOrCollectionFetch();
+	}
+
+
 	private void addFetches(Collection<String> fetches)
 	{
-		Map<String, Fetch> created = new HashMap<>();
+		Map<String, Fetch> created = directFetches();
 
 		for (String fetch : fetches)
 		{
@@ -867,6 +1112,59 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 	}
 
 
+	private List<JPAFetchPlan.Path> directFetchPaths()
+	{
+		final List<JPAFetchPlan.Path> result = new ArrayList<>();
+		collectDirectFetchPaths((SqmFrom<?, ?>) root, List.of(), result,
+		                       Collections.newSetFromMap(new IdentityHashMap<>()));
+		return result;
+	}
+
+
+	private void collectDirectFetchPaths(SqmFrom<?, ?> from, List<JPAFetchPlan.Step> prefix,
+	                                    List<JPAFetchPlan.Path> result, Set<SqmFrom<?, ?>> seen)
+	{
+		if (!seen.add(from))
+			return;
+		for (var join : from.getSqmJoins())
+			if (join instanceof SqmAttributeJoin<?, ?> attributeJoin)
+			{
+				final ManagedType<?> ownerType = session.getSessionFactory().getMetamodel().managedType(from.getJavaType());
+				final List<JPAFetchPlan.Step> path = new ArrayList<>(prefix);
+				path.add(new JPAFetchPlan.Step(ownerType, attributeJoin.getAttribute()));
+				if (attributeJoin.isFetched())
+					result.add(new JPAFetchPlan.Path(List.copyOf(path)));
+				collectDirectFetchPaths(attributeJoin, path, result, seen);
+			}
+		for (var treated : from.getSqmTreats())
+			collectDirectFetchPaths(treated, prefix, result, seen);
+	}
+
+
+	private Map<String, Fetch> directFetches()
+	{
+		final Map<String, Fetch> result = new HashMap<>();
+		collectDirectFetches((SqmFrom<?, ?>) root, "", result, Collections.newSetFromMap(new IdentityHashMap<>()));
+		return result;
+	}
+
+
+	private static void collectDirectFetches(SqmFrom<?, ?> from, String prefix, Map<String, Fetch> result, Set<SqmFrom<?, ?>> seen)
+	{
+		if (!seen.add(from))
+			return;
+		for (var join : from.getSqmJoins())
+			if (join instanceof SqmAttributeJoin<?, ?> attributeJoin)
+			{
+				final String path = prefix.isEmpty() ? attributeJoin.getAttribute().getName() :
+				                    prefix + "." + attributeJoin.getAttribute().getName();
+				if (attributeJoin.isFetched())
+					result.put(path, attributeJoin);
+				collectDirectFetches(attributeJoin, path, result, seen);
+			}
+	}
+
+
 	public void offset(int offset)
 	{
 		if (offset <= 0)
@@ -889,12 +1187,17 @@ public class JPAQueryBuilder<T, ID> implements JPAQueryBuilderInternal
 	{
 		for (WQOrder ordering : orders)
 		{
-			final Expression<?> property = getProperty(new WQPath(ordering.field));
+			final WQPath path = new WQPath(ordering.field);
+			final JPAJoin join = getOrCreateJoin(path.getTail());
+			final Expression<?> property = join.orderingProperty(path.getHead().getPath(), permitSchemaPrivate);
+			boolean collection = false;
+			for (WQPath parent = path.getTail(); parent != null; parent = parent.getTail())
+				collection |= getOrCreateJoin(parent).isCollection();
 
 			if (ordering.isAsc())
-				this.orders.add(new OrderExpr(criteriaBuilder.asc(property), ordering));
+				this.orders.add(new OrderExpr(criteriaBuilder.asc(property), ordering, collection));
 			else
-				this.orders.add(new OrderExpr(criteriaBuilder.desc(property), ordering));
+				this.orders.add(new OrderExpr(criteriaBuilder.desc(property), ordering, collection));
 		}
 
 		generated.orderBy(this.orders.stream().map(OrderExpr :: order).toList());

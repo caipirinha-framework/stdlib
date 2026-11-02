@@ -35,9 +35,9 @@ import org.jboss.resteasy.util.CaseInsensitiveMap;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -93,7 +93,7 @@ public class OkHttpClientEngine implements ClientHttpEngine
 
 
 	@Override
-	public javax.ws.rs.core.Response invoke(final Invocation invocation)
+	public jakarta.ws.rs.core.Response invoke(final Invocation invocation)
 	{
 		final long start = System.currentTimeMillis();
 
@@ -167,7 +167,7 @@ public class OkHttpClientEngine implements ClientHttpEngine
 			throw new RuntimeException(e);
 		}
 
-		javax.ws.rs.core.MediaType mediaType = request.getHeaders().getMediaType();
+		jakarta.ws.rs.core.MediaType mediaType = request.getHeaders().getMediaType();
 		final MediaType contentType = (mediaType == null) ? null : MediaType.parse(mediaType.toString());
 
 		return new RequestBody()

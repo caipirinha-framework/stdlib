@@ -5,7 +5,7 @@
 
 	<groupId>com.peterphi.std.guice</groupId>
 	<artifactId>stdlib-guice-webapp</artifactId>
-	<version>14.9.2-SNAPSHOT</version>
+	<version>15.0.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>stdlib guice webapp</name>
@@ -14,7 +14,7 @@
 	<parent>
 		<groupId>com.peterphi.std.guice</groupId>
 		<artifactId>stdlib-guice-parent</artifactId>
-		<version>14.9.2-SNAPSHOT</version>
+		<version>15.0.0-SNAPSHOT</version>
 	</parent>
 
 	<dependencies>
@@ -41,6 +41,7 @@
 			<artifactId>jose4j</artifactId>
 			<version>0.9.6</version>
 		</dependency>
+
 
 		<dependency>
 			<groupId>org.thymeleaf</groupId>
@@ -75,7 +76,7 @@
 		<dependency>
 			<groupId>org.jboss.logging</groupId>
 			<artifactId>jboss-logging</artifactId>
-			<version>3.3.0.Final</version>
+			<version>3.6.1.Final</version>
 		</dependency>
 
 		<dependency>
@@ -98,9 +99,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-			<version>3.1.0</version>
+			<groupId>jakarta.servlet</groupId>
+			<artifactId>jakarta.servlet-api</artifactId>
 			<scope>provided</scope>
 		</dependency>
 

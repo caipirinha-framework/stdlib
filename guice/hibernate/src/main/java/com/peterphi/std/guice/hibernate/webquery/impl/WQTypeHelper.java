@@ -110,11 +110,20 @@ public class WQTypeHelper
 		else if (clazz == Double.class || clazz == double.class)
 		{
 			if (value.equalsIgnoreCase("min"))
-				return Double.MIN_VALUE;
+				return -Double.MAX_VALUE;
 			else if (value.equalsIgnoreCase("max"))
 				return Double.MAX_VALUE;
 			else
 				return Double.parseDouble(value);
+		}
+		else if (clazz == Float.class || clazz == float.class)
+		{
+			if (value.equalsIgnoreCase("min"))
+				return -Float.MAX_VALUE;
+			else if (value.equalsIgnoreCase("max"))
+				return Float.MAX_VALUE;
+			else
+				return Float.parseFloat(value);
 		}
 		else if (clazz == Short.class || clazz == short.class)
 		{

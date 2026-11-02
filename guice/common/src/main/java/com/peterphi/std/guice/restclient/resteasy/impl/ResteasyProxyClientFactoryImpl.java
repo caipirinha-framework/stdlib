@@ -16,8 +16,8 @@ import com.peterphi.std.guice.restclient.annotations.NoClientBreaker;
 import org.apache.commons.lang.StringUtils;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.UriBuilder;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;

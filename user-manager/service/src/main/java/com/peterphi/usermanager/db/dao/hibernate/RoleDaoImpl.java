@@ -20,7 +20,7 @@ public class RoleDaoImpl extends HibernateDao<RoleEntity, String>
 			existing.setId(id);
 			existing.setCaption(caption);
 
-			save(existing);
+			persist(existing);
 		}
 
 		return existing;

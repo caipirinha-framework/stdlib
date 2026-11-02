@@ -7,10 +7,10 @@ import com.peterphi.std.guice.metrics.rest.impl.MetricsRestServiceImpl;
 import com.peterphi.std.guice.metrics.rest.types.MetricsDocument;
 import com.peterphi.std.guice.restclient.annotations.FastFailServiceClient;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/guice/metrics")
 @ImplementedBy(MetricsRestServiceImpl.class)

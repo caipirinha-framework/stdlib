@@ -5,7 +5,7 @@ import com.peterphi.std.annotation.Doc;
 import com.peterphi.std.guice.serviceregistry.rest.RestResource;
 import org.apache.commons.lang.StringUtils;
 
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;

@@ -9,7 +9,7 @@ import com.peterphi.std.guice.web.rest.service.servicedescription.RestConfigList
 import com.peterphi.std.guice.web.rest.service.servicedescription.RestServiceList;
 import org.apache.commons.lang.StringUtils;
 
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;

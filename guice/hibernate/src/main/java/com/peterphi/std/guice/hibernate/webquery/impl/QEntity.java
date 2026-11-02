@@ -1,38 +1,36 @@
 package com.peterphi.std.guice.hibernate.webquery.impl;
 
+import com.google.common.reflect.TypeToken;
 import com.peterphi.std.guice.database.annotation.EagerFetch;
 import com.peterphi.std.guice.database.annotation.WebQueryPrivate;
 import com.peterphi.std.guice.hibernate.webquery.impl.exception.InvalidPropertyException;
 import com.peterphi.std.guice.hibernate.webquery.impl.exception.PrivatePropertyUseRejected;
 import com.peterphi.std.guice.restclient.jaxb.webqueryschema.WQEntitySchema;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Subgraph;
+import jakarta.persistence.Table;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.EmbeddableType;
+import jakarta.persistence.metamodel.EntityType;
+import jakarta.persistence.metamodel.PluralAttribute;
+import jakarta.persistence.metamodel.SingularAttribute;
+import jakarta.persistence.metamodel.Type;
 import org.apache.commons.lang.StringUtils;
 import org.hibernate.Session;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.graph.RootGraph;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.hibernate.metamodel.mapping.ModelPart;
+import org.hibernate.metamodel.mapping.ModelPartContainer;
+import org.hibernate.metamodel.mapping.internal.ToOneAttributeMapping;
 
 import javax.annotation.Nullable;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.Subgraph;
-import javax.persistence.Table;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.EmbeddableType;
-import javax.persistence.metamodel.EntityType;
-import javax.persistence.metamodel.PluralAttribute;
-import javax.persistence.metamodel.SingularAttribute;
-import javax.persistence.metamodel.Type;
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,19 +46,24 @@ import java.util.stream.Collectors;
 
 public class QEntity
 {
-	private static final Logger log = LoggerFactory.getLogger(QEntity.class);
-
 	private final Class<?> clazz;
+	private final TypeToken<?> javaType;
 	private String name;
 
-	private Map<String, QProperty> properties = new HashMap<>();
-	private Map<String, QRelation> relations = new HashMap<>();
+	private final Map<String, QProperty> properties = new HashMap<>();
+	private final Map<String, QRelation> relations = new HashMap<>();
+	private final Set<String> directAttributeNames = new HashSet<>();
+	private final Map<String, List<String>> flattenedAliases = new HashMap<>();
+	private final Set<String> ambiguousAliases = new HashSet<>();
+	private boolean declaredIdentifierPrivate;
+	// Keep declared privacy independent of the queried type's polymorphic domain.
+	// In particular, an ancestor's conservative policy must not taint a public sibling.
+	private final Set<List<String>> privatePaths = new HashSet<>();
 
 	private List<QEntity> descendants = Collections.emptyList();
 
-	// Only one of the following should be populated
+	// Embeddables have no entity metamodel.
 	private EntityType<?> metamodelEntity;
-	private EmbeddableType<?> metamodelEmbeddable;
 
 	// Populated to let us get/set the ID of an entity dynamically
 	private PropertyWrapper idProperty;
@@ -68,27 +71,35 @@ public class QEntity
 	/**
 	 * Relations that are marked as having an eager fetch
 	 */
-	private Set<String> eagerRelations = new HashSet<>(0);
+	private final Set<String> eagerRelations = new HashSet<>(0);
 
 	/**
 	 * A full list of the default relations (including child relations) to expand
 	 */
-	private Set<String> defaultExpand;
+	private volatile Set<String> defaultExpand;
 	/**
-	 * A JPA2.1 EntityGraph version of defaultExpand
+	 * Entity graph for the default fetch paths.
 	 */
-	private RootGraph defaultExpandGraph;
+	private volatile RootGraph defaultExpandGraph;
 
 
 	/**
 	 * Relations that don't have a QRelation (because they're not to an @Entity or @Embeddable)
 	 */
-	private Map<String, Attribute> nonEntityRelations = new HashMap<>(0);
+	private record NonEntityRelation(Attribute<?, ?> attribute, List<String> path, boolean schemaPrivate) {}
+	private final Map<String, NonEntityRelation> nonEntityRelations = new HashMap<>();
 
 
 	public QEntity(Class<?> clazz)
 	{
-		this.clazz = clazz;
+		this(TypeToken.of(clazz));
+	}
+
+	QEntity(TypeToken<?> javaType)
+	{
+		this.javaType = javaType;
+		this.clazz = javaType.getRawType();
+		this.name = javaType.toString();
 	}
 
 
@@ -115,36 +126,15 @@ public class QEntity
 	{
 		this.metamodelEntity = metadata;
 		this.name = metadata.getName();
+		metadata.getAttributes().forEach(attribute -> directAttributeNames.add(attribute.getName()));
 
 		for (Attribute<?, ?> attribute : metadata.getAttributes())
 		{
-			parseFields(entityFactory, sessionFactory, null, attribute);
+			parseFields(entityFactory, sessionFactory, javaType, List.of(), false, attribute);
 		}
 
-		// Parse top-level properties
-
-		// Add identifier property
-		{
-			if (!metadata.hasSingleIdAttribute())
-				throw new IllegalArgumentException("@IdClass Entity not supported! " + metadata.getJavaType());
-
-			Type idType = metadata.getIdType();
-
-			switch (idType.getPersistenceType())
-			{
-				case BASIC:
-					break; // No action necessary, will be processed like a normal field
-				case EMBEDDABLE:
-				{
-					EmbeddableType<?> emb = (EmbeddableType<?>) idType;
-
-					parseEmbeddable(entityFactory, sessionFactory, "id", emb);
-					break;
-				}
-				default:
-					throw new IllegalArgumentException("Cannot handle id type: " + idType.getPersistenceType() + ": " + idType);
-			}
-		}
+		if (!metadata.hasSingleIdAttribute())
+			throw new IllegalArgumentException("@IdClass Entity not supported! " + metadata.getJavaType());
 
 		// Add links to descendants
 		{
@@ -158,8 +148,17 @@ public class QEntity
 		// Figure out the id method/field
 		if (metamodelEntity != null && metamodelEntity.hasSingleIdAttribute())
 		{
-			final String idPropertyName = metamodelEntity.getId(metamodelEntity.getIdType().getJavaType()).getName();
-
+			final Attribute<?, ?> identifier = metamodelEntity.getId(metamodelEntity.getIdType().getJavaType());
+			final String idPropertyName = identifier.getName();
+			this.declaredIdentifierPrivate = new PersistentAttributeMetadata(javaType, identifier).getAnnotation(WebQueryPrivate.class) != null ||
+			                         privatePaths.stream().anyMatch(path -> path.getFirst().equals(idPropertyName));
+			if (!properties.containsKey(idPropertyName) && metamodelEntity.getIdType().getPersistenceType() == Type.PersistenceType.EMBEDDABLE)
+			{
+				// Keep whole-ID ordering/reference paths available without exporting an
+				// embeddable value as though it were a primitive schema property.
+				properties.put(idPropertyName, new QProperty(this, idPropertyName, identifier.getJavaType(), false,
+				                                            declaredIdentifierPrivate, List.of(idPropertyName), true));
+			}
 			this.idProperty = new PropertyWrapper(clazz, idPropertyName);
 		}
 	}
@@ -178,68 +177,43 @@ public class QEntity
 	                            final String prefix,
 	                            final EmbeddableType<?> type)
 	{
-		this.metamodelEmbeddable = type;
-		// Make sure the entity factory sees this embeddable
-		entityFactory.getEmbeddable(type.getJavaType(), type);
-
-		for (Attribute<?, ?> attribute : type.getAttributes())
-		{
-			parseFields(entityFactory, sessionFactory, prefix, attribute);
-		}
+		if (metamodelEntity == null && prefix == null)
+			type.getAttributes().forEach(attribute -> directAttributeNames.add(attribute.getName()));
+		parseEmbeddable(entityFactory, sessionFactory, javaType,
+		                prefix == null ? List.of() : Arrays.asList(prefix.split(":")), false, type);
 	}
 
-
-	private List<Field> getAllFields(Class clazz)
+	private void parseEmbeddable(final QEntityFactory entityFactory,
+	                             final SessionFactoryImplementor sessionFactory,
+	                             final TypeToken<?> context,
+	                             final List<String> path,
+	                             final boolean privateContainer,
+	                             final EmbeddableType<?> type)
 	{
-		List<Field> fields = new ArrayList<>();
-
-		while (clazz != null)
-		{
-			fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
-			clazz = clazz.getSuperclass();
-		}
-
-		return fields;
+		for (Attribute<?, ?> attribute : type.getAttributes())
+			parseFields(entityFactory, sessionFactory, context, path, privateContainer, attribute);
 	}
-
 
 	protected boolean isEagerFetch(final Attribute<?, ?> attribute)
 	{
-		if (attribute.isCollection() || attribute.isAssociation())
-		{
-			final Member member = attribute.getJavaMember();
+		return isEagerFetch(new PersistentAttributeMetadata(javaType, attribute));
+	}
 
-			if (member instanceof AnnotatedElement)
-			{
-				final AnnotatedElement el = (AnnotatedElement) member;
-
-				final boolean hasEagerFetch = el.isAnnotationPresent(EagerFetch.class);
-
-				final FetchType fetchType;
-				if (el.isAnnotationPresent(OneToMany.class))
-					fetchType = el.getAnnotation(OneToMany.class).fetch();
-				else if (el.isAnnotationPresent(ManyToOne.class))
-					fetchType = el.getAnnotation(ManyToOne.class).fetch();
-				else if (el.isAnnotationPresent(OneToOne.class))
-					fetchType = el.getAnnotation(OneToOne.class).fetch();
-				else if (el.isAnnotationPresent(ElementCollection.class))
-					fetchType = el.getAnnotation(ElementCollection.class).fetch();
-				else if (el.isAnnotationPresent(ManyToMany.class))
-					fetchType = el.getAnnotation(ManyToMany.class).fetch();
-				else
-					return false;
-
-				if (hasEagerFetch && fetchType == FetchType.EAGER)
-					log.warn(
-							"ENTITY HAS @EagerFetch but also JPA fetch=EAGER annotation - will not be able to instruct Hibernate to suppress fetching this relation: {} {}",
-							clazz,
-							member.toString());
-
-				return (hasEagerFetch || fetchType == FetchType.EAGER);
-			}
-		}
-
-		return false;
+	private boolean isEagerFetch(final PersistentAttributeMetadata metadata)
+	{
+		boolean eager = metadata.getAnnotation(EagerFetch.class) != null;
+		FetchType fetchType = FetchType.LAZY;
+		if (metadata.getAnnotation(OneToMany.class) != null)
+			fetchType = metadata.getAnnotation(OneToMany.class).fetch();
+		else if (metadata.getAnnotation(ManyToOne.class) != null)
+			fetchType = metadata.getAnnotation(ManyToOne.class).fetch();
+		else if (metadata.getAnnotation(OneToOne.class) != null)
+			fetchType = metadata.getAnnotation(OneToOne.class).fetch();
+		else if (metadata.getAnnotation(ElementCollection.class) != null)
+			fetchType = metadata.getAnnotation(ElementCollection.class).fetch();
+		else if (metadata.getAnnotation(ManyToMany.class) != null)
+			fetchType = metadata.getAnnotation(ManyToMany.class).fetch();
+		return eager || fetchType == FetchType.EAGER;
 	}
 
 
@@ -274,179 +248,171 @@ public class QEntity
 				populate.add(StringUtils.join(path, '.') + "." + eagerRelation);
 
 			// If this is a known relation then expand it further
-			if (hasRelation(eagerRelation))
+			QRelation relation = relations.values().stream()
+			                              .filter(candidate -> !candidate.isAlias() && String.join(".", candidate.getPersistentPath()).equals(eagerRelation))
+			                              .findFirst().orElse(null);
+			if (relation != null)
 			{
 				path.push(eagerRelation);
 
-				final QEntity entity = getRelation(eagerRelation).getEntity();
+				final QEntity entity = relation.getEntity();
 
 				entity.getEagerFetch(visited, path, populate);
 
 				path.pop();
 			}
 		}
+		visited.remove(this);
 	}
 
 
 	private void parseFields(final QEntityFactory entityFactory,
 	                         final SessionFactoryImplementor sessionFactory,
-	                         final String prefix,
+	                         final TypeToken<?> context,
+	                         final List<String> parentPath,
+	                         final boolean privateContainer,
 	                         final Attribute<?, ?> attribute)
 	{
-		final String name = attribute.getName();
-		//final javax.persistence.metamodel.Type<?> type;
-		final Class<?> clazz;
-		final boolean isCollection;
-		final boolean nullable;
-		final boolean privateField;
+		final PersistentAttributeMetadata metadata = new PersistentAttributeMetadata(context, attribute);
+		final List<String> path = new ArrayList<>(parentPath);
+		path.add(attribute.getName());
+		final String name = String.join(":", path);
+		final boolean privateField = privateContainer || metadata.getAnnotation(WebQueryPrivate.class) != null;
+		if (privateField)
+			privatePaths.add(List.copyOf(path));
+		final boolean collection = attribute.isCollection();
+		final boolean nullable = attribute instanceof SingularAttribute<?, ?> singular && singular.isOptional();
+		final TypeToken<?> valueType = collection
+		                              ? metadata.getElementType((PluralAttribute<?, ?, ?>) attribute)
+		                              : metadata.getValueType();
 
-		if (attribute.getJavaMember() instanceof Method m)
+		if (attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED && !collection)
 		{
-			privateField = m.isAnnotationPresent(WebQueryPrivate.class);
+			EmbeddableType<?> embedded = (EmbeddableType<?>) ((SingularAttribute<?, ?>) attribute).getType();
+			parseEmbeddable(entityFactory, sessionFactory, valueType, path, privateField, embedded);
 		}
-		else if (attribute.getJavaMember() instanceof Field f)
+		else if (collection || attribute.isAssociation())
 		{
-			privateField = f.isAnnotationPresent(WebQueryPrivate.class);
-		}
-		else
-		{
-			privateField = false;
-		}
-
-
-		// Transparently unwrap collections
-		if (attribute.isCollection())
-		{
-			isCollection = true;
-			nullable = false;
-
-			//type = ((PluralAttribute<?, ?, ?>) attribute).getElementType();
-			clazz = ((PluralAttribute<?, ?, ?>) attribute).getElementType().getJavaType();
-		}
-		else
-		{
-			isCollection = false;
-			//type = attribute.getDeclaringType();
-			nullable = attribute instanceof SingularAttribute sa && sa.isOptional();
-			clazz = attribute.getJavaType();
-		}
-
-		// TODO is it also meaningful to add the parent composite type as a field too?
-		// TODO if not we should have this as a separate if condition
-		if (attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED && !isCollection)
-		{
-			SingularAttribute<?, ?> attr = (SingularAttribute<?, ?>) attribute;
-			EmbeddableType<?> ct = (EmbeddableType<?>) attr.getType();
-
-			parseEmbeddable(entityFactory, sessionFactory, prefix, ct);
-		}
-		else if (isCollection || attribute.isAssociation())
-		{
-			final boolean isEagerFetch = isEagerFetch(attribute);
-
-			final QRelation relation;
-			if (attribute.getPersistentAttributeType() != Attribute.PersistentAttributeType.EMBEDDED &&
-			    attribute.getPersistentAttributeType() != Attribute.PersistentAttributeType.BASIC)
+			final boolean eager = isEagerFetch(metadata);
+			QEntity related = null;
+			if (collection && ((PluralAttribute<?, ?, ?>) attribute).getElementType().getPersistenceType() == Type.PersistenceType.EMBEDDABLE)
 			{
-				if (attribute.getPersistentAttributeType() != Attribute.PersistentAttributeType.ELEMENT_COLLECTION)
-				{
-					relation = new QRelation(this, prefix, name, entityFactory.get(clazz), nullable, isEagerFetch, isCollection);
-				}
-				else
-				{
-					PluralAttribute<?, ?, ?> plural = (PluralAttribute<?, ?, ?>) attribute;
-
-					if (plural.getElementType().getPersistenceType() == Type.PersistenceType.EMBEDDABLE)
-					{
-						final EmbeddableType<?> ct = (EmbeddableType<?>) plural.getElementType();
-
-						relation = new QRelation(this,
-						                         prefix,
-						                         name,
-						                         entityFactory.getEmbeddable(ct.getJavaType(), ct),
-						                         nullable,
-						                         isEagerFetch,
-						                         isCollection);
-					}
-					else if (plural.getElementType().getPersistenceType() == Type.PersistenceType.BASIC)
-					{
-						// Ignore this altogether. We should probably come up with a way of querying this relationship in the future
-						relation = null;
-
-						// Record the relation so we can use it in the future to determine if a relation is a collection for query optimisation
-						nonEntityRelations.put(name, attribute);
-
-						if (log.isDebugEnabled())
-							log.debug("Ignoring BASIC ElementCollection {} of {} {}",
-							          plural.getCollectionType(),
-							          plural.getElementType().getJavaType(),
-							          plural.getName());
-					}
-					else
-					{
-						throw new IllegalArgumentException("Cannot handle ElementCollection of " +
-						                                   plural.getElementType().getJavaType() +
-						                                   " - type " +
-						                                   plural.getElementType().getPersistenceType());
-					}
-				}
+				EmbeddableType<?> embedded = (EmbeddableType<?>) ((PluralAttribute<?, ?, ?>) attribute).getElementType();
+				related = entityFactory.getEmbeddable(valueType, embedded);
 			}
-			else if (isCollection && attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED)
+			else if (attribute.isAssociation())
 			{
-				SingularAttribute<?, ?> attr = (SingularAttribute<?, ?>) attribute;
-				EmbeddableType<?> ct = (EmbeddableType<?>) attr.getType();
+				// The persistence target may differ from the Java declaration, for
+				// example Set<Interface> with targetEntity=ConcreteEntity.class.
+				Type<?> targetType = collection ? ((PluralAttribute<?, ?, ?>) attribute).getElementType()
+				                                : ((SingularAttribute<?, ?>) attribute).getType();
+				related = entityFactory.get(targetType.getJavaType());
+			}
 
-				relation = new QRelation(this,
-				                         prefix,
-				                         name,
-				                         entityFactory.getEmbeddable(clazz, ct),
-				                         nullable,
-				                         isEagerFetch,
-				                         isCollection);
+			if (related != null)
+			{
+				boolean identifierShortcut = !collection && canUseIdentifierShortcut(sessionFactory, path);
+				addRelation(new QRelation(this, name, related, nullable, eager, collection, privateField, path, false, identifierShortcut));
+				if (path.size() > 1)
+					addRelation(new QRelation(this, attribute.getName(), related, nullable, eager, collection, privateField, path, true, identifierShortcut));
 			}
 			else
 			{
-				// N.B. this fallback catches collections we don't natively support but that we have some support for (i.e. for fetch joining against)
-				// As result, we will not be able to record them as a QRelation, but we can record them as a non-entity relation
-				relation = null;
-
-				// Record the relation so we can use it in the future to determine if a relation is a collection for query optimisation
-				nonEntityRelations.put(name, attribute);
-
-				if (log.isDebugEnabled())
-					log.debug("Unknown Collection type: {} {} with name {} within {} - ignoring",
-					          attribute.getPersistentAttributeType(),
-					          attribute,
-					          name,
-					          clazz);
+				NonEntityRelation nonEntity = new NonEntityRelation(attribute, List.copyOf(path), privateField);
+				nonEntityRelations.put(name, nonEntity);
+				if (path.size() > 1 && registerAlias(attribute.getName(), path))
+					nonEntityRelations.put(attribute.getName(), nonEntity);
 			}
-
-			if (relation != null)
-			{
-				relations.put(name, relation);
-
-				// Set up a special property to allow constraining the collection size
-				if (isCollection)
-					properties.put(name + ":size", new QSizeProperty(relations.get(name)));
-			}
-
-			if (isEagerFetch)
-			{
-				this.eagerRelations.add(attribute.getName());
-			}
+			if (eager)
+				eagerRelations.add(String.join(".", path));
 		}
 		else
 		{
-			final String newPrefix;
-
-			if (prefix != null)
-				newPrefix = prefix + ":" + name;
-			else
-				newPrefix = name;
-
-
-			properties.put(newPrefix, new QProperty(this, prefix, name, clazz, nullable, privateField));
+			addProperty(new QProperty(this, name, valueType.getRawType(), nullable, privateField, path, false));
+			// Preserve unambiguous legacy flattened names; qualified paths always remain available.
+			if (path.size() > 1)
+				addProperty(new QProperty(this, attribute.getName(), valueType.getRawType(), nullable, privateField, path, true));
 		}
+	}
+
+	private boolean canUseIdentifierShortcut(SessionFactoryImplementor factory, List<String> path)
+	{
+		if (metamodelEntity == null)
+			return false;
+		ModelPart part = factory.getMappingMetamodel().getEntityDescriptor(clazz);
+		for (String name : path)
+		{
+			if (!(part instanceof ModelPartContainer container))
+				return false;
+			part = container.findSubPart(name, null);
+		}
+		// Inverse associations and property-ref mappings cannot read the target ID
+		// from the owner's local FK. Retain LEFT navigation in those cases.
+		return part instanceof ToOneAttributeMapping toOne && toOne.isFkOptimizationAllowed() && toOne.isReferenceToPrimaryKey();
+	}
+
+	private boolean registerAlias(String name, List<String> path)
+	{
+		if (directAttributeNames.contains(name) || ambiguousAliases.contains(name))
+			return false;
+		List<String> existing = flattenedAliases.putIfAbsent(name, List.copyOf(path));
+		if (existing == null || existing.equals(path))
+			return true;
+		ambiguousAliases.add(name);
+		properties.remove(name);
+		properties.remove(name + ":size");
+		relations.remove(name);
+		nonEntityRelations.remove(name);
+		return false;
+	}
+
+	private void addProperty(QProperty property)
+	{
+		if (!property.isAlias() || registerAlias(property.getName(), property.getPersistentPath()))
+			properties.put(property.getName(), property);
+	}
+
+	private void addRelation(QRelation relation)
+	{
+		if (!relation.isAlias() || registerAlias(relation.getName(), relation.getPersistentPath()))
+		{
+			relations.put(relation.getName(), relation);
+			if (relation.isCollection())
+				properties.put(relation.getName() + ":size", new QSizeProperty(relation));
+		}
+	}
+
+	public void assertIdentifierAccessible(boolean permitSchemaPrivate)
+	{
+		if (!permitSchemaPrivate && isIdentifierPrivate())
+			throw new PrivatePropertyUseRejected("WebQuery prohibited from accessing Private identifier on " + clazz.getName());
+	}
+
+	private boolean isIdentifierPrivate()
+	{
+		return declaredIdentifierPrivate || descendants.stream().anyMatch(child -> child != this && child.declaredIdentifierPrivate);
+	}
+
+	/**
+	 * A query of an entity type can return any concrete descendant. A named path
+	 * is therefore private if any such descendant declares that path (or one of
+	 * its containers) private. Read declarations only: following effective flags
+	 * would introduce cycles and incorrectly restrict public sibling queries.
+	 * Checks run after factory construction; no partial policy is cached while
+	 * the factory is resolving cyclic associations.
+	 */
+	boolean isPathPrivate(List<String> path)
+	{
+		if (path.size() == 1 && path.getFirst().equals(getIdPropertyName()) && isIdentifierPrivate())
+			return true;
+		if (declaresPrivatePath(path))
+			return true;
+		return descendants.stream().anyMatch(child -> child != this && child.declaresPrivatePath(path));
+	}
+
+	private boolean declaresPrivatePath(List<String> path)
+	{
+		return privatePaths.stream().anyMatch(prefix -> path.size() >= prefix.size() && path.subList(0, prefix.size()).equals(prefix));
 	}
 
 
@@ -510,9 +476,54 @@ public class QEntity
 		if (!hasNonEntityRelation(name))
 			throw new IllegalArgumentException("No such non-entity relation: " + name + " on " + this);
 		else
-			return nonEntityRelations.get(name).isCollection();
+			return nonEntityRelations.get(name).attribute().isCollection();
 	}
 
+
+	/**
+	 * Validates a requested fetch path and translates embedded/legacy aliases to
+	 * Hibernate's physical attribute path. Private checks apply at every hop.
+	 */
+	public String resolveFetchPath(String requested, boolean permitSchemaPrivate)
+	{
+		String path = requested.replace(':', '.');
+		List<QRelation> candidates = relations.values().stream()
+		                                     .sorted(java.util.Comparator.comparingInt((QRelation relation) -> relation.getName().length()).reversed())
+		                                     .toList();
+		for (QRelation relation : candidates)
+		{
+			String publicPath = relation.getName().replace(':', '.');
+			if (path.equals(publicPath) || path.startsWith(publicPath + "."))
+			{
+				getRelation(relation.getName(), permitSchemaPrivate);
+				String physicalPath = String.join(".", relation.getPersistentPath());
+				if (path.equals(publicPath))
+					return physicalPath;
+				return physicalPath + "." + relation.getEntity().resolveFetchPath(path.substring(publicPath.length() + 1), permitSchemaPrivate);
+			}
+		}
+		for (Map.Entry<String, NonEntityRelation> entry : nonEntityRelations.entrySet())
+		{
+			String publicPath = entry.getKey().replace(':', '.');
+			if (path.equals(publicPath) || path.startsWith(publicPath + "."))
+			{
+				if (!permitSchemaPrivate && (entry.getValue().schemaPrivate() || isPathPrivate(entry.getValue().path())))
+					throw new PrivatePropertyUseRejected("WebQuery prohibited from fetching Private property " + requested);
+				if (path.equals(publicPath))
+					return String.join(".", entry.getValue().path());
+				throw new InvalidPropertyException("Cannot fetch through a basic collection: " + requested);
+			}
+		}
+		QProperty property = properties.get(requested);
+		if (property == null)
+			property = properties.get(path.replace('.', ':'));
+		if (property != null)
+		{
+			getProperty(property.getName(), permitSchemaPrivate);
+			return String.join(".", property.getPersistentPath());
+		}
+		throw new InvalidPropertyException("Unknown fetch path " + requested + " on " + clazz.getName());
+	}
 
 	@Nullable
 	public String getIdPropertyName()
@@ -566,14 +577,39 @@ public class QEntity
 				throw new PrivatePropertyUseRejected("WebQuery prohibited from accessing Private property " + name);
 		}
 		else
-			throw new InvalidPropertyException("Unknown property " +
-			                                   name +
-			                                   " on " +
-			                                   this.clazz.getSimpleName() +
-			                                   ", expected one of " +
-			                                   properties.keySet());
+		{
+			// Colon navigation also supports to-one foreign-key shortcuts, e.g. job:id.
+			// Resolve the longest relation prefix so embedded forms such as info:job:id
+			// retain their meaning without introducing an unnecessary SQL join.
+			for (QRelation candidate : relations.values().stream()
+			                                  .sorted(java.util.Comparator.comparingInt((QRelation relation) -> relation.getName().length()).reversed())
+			                                  .toList())
+			{
+				String prefix = candidate.getName() + ":";
+				if (!name.startsWith(prefix))
+					continue;
+				QRelation relation = getRelation(candidate.getName(), permitSchemaPrivatePropertyAccess);
+				if (relation.isCollection())
+					throw new InvalidPropertyException("Colon property navigation requires a to-one relation: " + name);
+				QProperty nested = relation.getEntity().getProperty(name.substring(prefix.length()), permitSchemaPrivatePropertyAccess);
+				List<String> physicalPath = new ArrayList<>(relation.getPersistentPath());
+				physicalPath.addAll(nested.getPersistentPath());
+				if (nested instanceof QSizeProperty size)
+					return new QSizeProperty(this, name, relation, size, physicalPath);
+				return new QProperty(this, name, relation, nested, physicalPath);
+			}
+			throw new InvalidPropertyException("Unknown property " + name + " on " + clazz.getSimpleName() + ", expected one of " + properties.keySet());
+		}
 	}
 
+
+	public QRelation getRelation(String name, boolean permitSchemaPrivate)
+	{
+		QRelation relation = getRelation(name);
+		if (!permitSchemaPrivate && relation.isSchemaPrivate())
+			throw new PrivatePropertyUseRejected("WebQuery prohibited from accessing Private relation " + name);
+		return relation;
+	}
 
 	public QRelation getRelation(String name)
 	{
@@ -610,11 +646,11 @@ public class QEntity
 		obj.properties = properties
 				                 .values()
 				                 .stream()
-				                 .filter(prop -> !(prop instanceof QSizeProperty))
+				                 .filter(prop -> !prop.isOmitFromSchemaDoc())
 				                 .map(QProperty :: encode)
 				                 .collect(Collectors.toList());
 
-		obj.properties.addAll(relations.values().stream().map(QRelation :: encode).toList());
+		obj.properties.addAll(relations.values().stream().filter(relation -> !relation.isAlias() && !relation.isSchemaPrivate()).map(QRelation :: encode).toList());
 
 		return obj;
 	}

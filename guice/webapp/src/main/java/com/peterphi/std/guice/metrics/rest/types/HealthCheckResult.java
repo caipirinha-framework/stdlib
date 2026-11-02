@@ -1,7 +1,7 @@
 package com.peterphi.std.guice.metrics.rest.types;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
 
 @XmlType(name = "HealthCheckResultType")
 public class HealthCheckResult

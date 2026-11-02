@@ -20,12 +20,10 @@ public class SampleCountUserType implements UserType
 {
 	public static SampleCountUserType INSTANCE = new SampleCountUserType();
 
-	private static final int[] SQL_TYPES = {Types.VARCHAR};
-
 	@Override
-	public int[] sqlTypes()
+	public int getSqlType()
 	{
-		return SQL_TYPES;
+		return Types.VARCHAR;
 	}
 
 	@Override
@@ -59,11 +57,11 @@ public class SampleCountUserType implements UserType
 
 	@Override
 	public SampleCount nullSafeGet(final ResultSet resultSet,
-	                               final String[] names,
+	                               final int position,
 	                               final SharedSessionContractImplementor session,
 	                               final Object owner) throws HibernateException, SQLException
 	{
-		final String encoded = resultSet.getString(names[0]);
+		final String encoded = resultSet.getString(position);
 
 		if (resultSet.wasNull())
 			return null;

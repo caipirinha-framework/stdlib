@@ -5,10 +5,10 @@ import com.peterphi.std.types.SampleCount;
 import com.peterphi.std.types.Timecode;
 import org.joda.time.DateTime;
 
-import javax.xml.bind.annotation.XmlAnyElement;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlType;
+import jakarta.xml.bind.annotation.XmlAnyElement;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlType;
 import java.util.Date;
 
 @XmlRootElement(name = "WQProjectionField")

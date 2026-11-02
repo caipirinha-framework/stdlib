@@ -2,8 +2,8 @@ package com.peterphi.std.guice.hibernate.entitycollection;
 
 import com.google.common.base.MoreObjects;
 
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 
 @Embeddable
 public class AlternateIdEmbeddedEntity

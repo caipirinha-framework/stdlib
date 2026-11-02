@@ -4,8 +4,8 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
-import javax.ws.rs.ext.ParamConverter;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.ParamConverter;
+import jakarta.ws.rs.ext.Provider;
 
 @Provider
 class DateTimeStringConverter implements ParamConverter<DateTime>

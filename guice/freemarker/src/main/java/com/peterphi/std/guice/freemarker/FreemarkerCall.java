@@ -4,7 +4,7 @@ import com.peterphi.std.guice.web.rest.templating.TemplateCall;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;

@@ -5,11 +5,11 @@ import com.google.inject.Provider;
 import com.google.inject.name.Named;
 import com.peterphi.std.annotation.Doc;
 import com.peterphi.std.threading.Timeout;
+import jakarta.servlet.ServletContext;
 import org.thymeleaf.templateresolver.ITemplateResolver;
 import org.thymeleaf.templateresolver.WebApplicationTemplateResolver;
-import org.thymeleaf.web.servlet.JavaxServletWebApplication;
+import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
-import javax.servlet.ServletContext;
 import java.util.concurrent.TimeUnit;
 
 public class TemplateResolverProvider implements Provider<ITemplateResolver>
@@ -30,7 +30,7 @@ public class TemplateResolverProvider implements Provider<ITemplateResolver>
 	@Override
 	public ITemplateResolver get()
 	{
-		WebApplicationTemplateResolver resolver = new WebApplicationTemplateResolver(JavaxServletWebApplication
+		WebApplicationTemplateResolver resolver = new WebApplicationTemplateResolver(JakartaServletWebApplication
 				                                                                             .buildApplication(ctx));
 
 		resolver.setTemplateMode(templateMode);
