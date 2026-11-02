@@ -46,7 +46,7 @@
 		<mockito.version>5.24.0</mockito.version>
 		<jackson.version>2.21.6</jackson.version>
 		<ognl.version>${project.version}</ognl.version>
-		<ognl.upstream.version>3.4.16</ognl.upstream.version>
+		<ognl.upstream.version>3.4.17</ognl.upstream.version>
 		<servlet.version>6.1.0</servlet.version>
 	</properties>
 	<scm>
