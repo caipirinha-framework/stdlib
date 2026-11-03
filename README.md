@@ -3,8 +3,11 @@ See [the project documentation](https://stdlib.readthedocs.io/en/latest/index.ht
 
 The `jakarta` branch builds stdlib **15.0.0-SNAPSHOT** for Java 25 and later,
 using Servlet 6.1 (Tomcat 11), Guice 7, RESTEasy 7, Hibernate ORM 7.4,
-Jakarta JAXB 4 and MOXy 4. Rebuild consumers together: the public REST,
+Jakarta JAXB 4 and MOXy 5.0.2. Rebuild consumers together: the public REST,
 persistence and servlet APIs now use `jakarta.*`.
+
+The root parent pins upstream ASM to 9.11.1 through the ASM BOM, aligning
+MOXy and Guice on the same bytecode support libraries.
 
 The reactor also packages OGNL 3.4.16 with a targeted generic method resolution
 fix for Hibernate's persistent collections as `ognl:ognl:15.0.0-SNAPSHOT`.

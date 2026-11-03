@@ -1,6 +1,6 @@
 package com.peterphi.std.util.jaxb;
 
-import org.eclipse.persistence.internal.libraries.asm.EclipseLinkASMClassWriter;
+import org.eclipse.persistence.asm.EclipseLinkASMClassWriter;
 import org.junit.Test;
 
 import java.text.MessageFormat;
