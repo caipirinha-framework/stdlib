@@ -8,8 +8,8 @@
 		<artifactId>stdlib-parent</artifactId>
 		<version>15.0.1-SNAPSHOT</version>
 	</parent>
-	<groupId>ognl</groupId>
-	<artifactId>ognl</artifactId>
+	<groupId>com.peterphi.std</groupId>
+	<artifactId>stdlib-ognl</artifactId>
 	<name>OGNL with generic method resolution compatibility</name>
 	<description>Upstream OGNL with a corrected generic parameter resolver for Hibernate persistent collections.</description>
 	<licenses>
