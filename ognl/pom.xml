@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>com.peterphi.std</groupId>
 		<artifactId>stdlib-parent</artifactId>
-		<version>15.0.0</version>
+		<version>15.0.1-SNAPSHOT</version>
 	</parent>
 	<groupId>ognl</groupId>
 	<artifactId>ognl</artifactId>
