@@ -9,8 +9,8 @@ persistence and servlet APIs now use `jakarta.*`.
 The root parent pins upstream ASM to 9.11.1 through the ASM BOM, aligning
 MOXy and Guice on the same bytecode support libraries.
 
-The reactor also packages OGNL 3.4.16 with a targeted generic method resolution
-fix for Hibernate's persistent collections as `ognl:ognl:15.0.0-SNAPSHOT`.
+The reactor also packages OGNL 3.4.17 with a targeted generic method resolution
+fix for Hibernate's persistent collections as `com.peterphi.std:stdlib-ognl:15.0.1-SNAPSHOT`.
 Consumers must use this artifact instead of adding a separate upstream OGNL jar.
 
 Use a Java 25 JDK for the shared artifacts:

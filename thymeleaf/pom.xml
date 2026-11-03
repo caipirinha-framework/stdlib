@@ -56,8 +56,8 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>ognl</groupId>
-			<artifactId>ognl</artifactId>
+			<groupId>com.peterphi.std</groupId>
+			<artifactId>stdlib-ognl</artifactId>
 			<version>${ognl.version}</version>
 
 			<exclusions>
