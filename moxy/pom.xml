@@ -5,14 +5,14 @@
 	<groupId>com.peterphi.std</groupId>
 	<artifactId>moxy</artifactId>
 	<packaging>jar</packaging>
-	<version>15.0.0</version>
+	<version>15.0.1-SNAPSHOT</version>
 	<name>moxy as default jaxb</name>
 	<description>Make moxy the default jaxb impl for a JVM</description>
 
 	<parent>
 		<groupId>com.peterphi.std</groupId>
 		<artifactId>stdlib-parent</artifactId>
-		<version>15.0.0</version>
+		<version>15.0.1-SNAPSHOT</version>
 	</parent>
 
 	<dependencies>
