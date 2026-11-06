@@ -19,6 +19,8 @@
  */
 package org.thymeleaf.templateparser.markup;
 
+import com.peterphi.std.thymeleaf.TestIdAttributeRemovalDialect;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -161,7 +163,7 @@ public abstract class AbstractMarkupTemplateParser implements ITemplateParser {
             IMarkupHandler handler =
                         new TemplateHandlerAdapterMarkupHandler(
                                 templateName,
-                                templateHandler,
+                                TestIdAttributeRemovalDialect.wrap(configuration, templateMode, templateHandler),
                                 configuration.getElementDefinitions(),
                                 configuration.getAttributeDefinitions(),
                                 templateMode,

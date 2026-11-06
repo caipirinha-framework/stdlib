@@ -4,7 +4,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.Stage;
 import com.peterphi.std.guice.web.rest.templating.Templater;
+import com.peterphi.std.thymeleaf.TestIdAttributeRemovalDialect;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.templateresolver.ITemplateResolver;
 
@@ -23,10 +25,12 @@ public class ThymeleafModule extends AbstractModule
 
 	@Provides
 	@Singleton
-	public TemplateEngine getTemplateEngine(ITemplateResolver resolver)
+	public TemplateEngine getTemplateEngine(ITemplateResolver resolver, Stage stage)
 	{
 		TemplateEngine engine = new TemplateEngine();
 		engine.setTemplateResolver(resolver);
+		if (stage == Stage.PRODUCTION)
+			engine.addDialect(new TestIdAttributeRemovalDialect());
 
 		return engine;
 	}
