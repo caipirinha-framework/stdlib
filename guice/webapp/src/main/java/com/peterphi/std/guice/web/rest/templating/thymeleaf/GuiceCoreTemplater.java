@@ -4,12 +4,14 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
+import com.google.inject.Stage;
 import com.google.inject.name.Named;
 import com.peterphi.std.guice.apploader.GuiceProperties;
 import com.peterphi.std.guice.common.auth.iface.CurrentUser;
 import com.peterphi.std.guice.common.cached.CacheManager;
 import com.peterphi.std.guice.common.serviceprops.composite.GuiceConfig;
 import com.peterphi.std.guice.web.rest.service.GuiceCoreServicesRegistry;
+import com.peterphi.std.thymeleaf.TestIdAttributeRemovalDialect;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
@@ -24,6 +26,8 @@ public class GuiceCoreTemplater
 {
 	@Inject
 	GuiceConfig configuration;
+	@Inject
+	Stage stage;
 	@Inject
 	MetricRegistry metrics;
 	@Inject
@@ -121,7 +125,7 @@ public class GuiceCoreTemplater
 	}
 
 
-	private static TemplateEngine createEngine()
+	private TemplateEngine createEngine()
 	{
 		ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
 
@@ -132,6 +136,8 @@ public class GuiceCoreTemplater
 
 		TemplateEngine engine = new TemplateEngine();
 		engine.setTemplateResolver(resolver);
+		if (stage == Stage.PRODUCTION)
+			engine.addDialect(new TestIdAttributeRemovalDialect());
 
 		return engine;
 	}
