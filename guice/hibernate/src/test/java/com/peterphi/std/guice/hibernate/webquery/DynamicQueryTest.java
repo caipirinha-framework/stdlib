@@ -10,13 +10,12 @@ import com.peterphi.std.guice.hibernate.webquery.impl.exception.PrivatePropertyU
 import com.peterphi.std.guice.hibernate.webquery.impl.jpa.JPASearchExecutor;
 import com.peterphi.std.guice.hibernate.webquery.impl.jpa.JPASearchStrategy;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WebQuery;
-import com.peterphi.std.guice.testing.GuiceUnit;
+import com.peterphi.std.guice.testing.GuiceTest;
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.GuiceConfig;
 import org.joda.time.DateTime;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,12 +24,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(GuiceUnit.class)
+@GuiceTest
 @GuiceConfig(config = "hibernate-tests-in-memory-hsqldb.properties", classPackages = ParentEntity.class)
 public class DynamicQueryTest
 {
@@ -52,7 +53,7 @@ public class DynamicQueryTest
 
 
 	@Transactional
-	@Before
+	@BeforeEach
 	public void clearDatabaseBeforeTest()
 	{
 		JPASearchExecutor.ALWAYS_COMPUTE_SIZE = true;
@@ -67,7 +68,7 @@ public class DynamicQueryTest
 	}
 
 
-	@After
+	@AfterEach
 	public void disableAlwaysComputeSize()
 	{
 		JPASearchExecutor.ALWAYS_COMPUTE_SIZE = false;
@@ -136,31 +137,31 @@ public class DynamicQueryTest
 	}
 
 
-	@Test(expected = PrivatePropertyUseRejected.class)
+	@Test
 	public void testCannotConstrainPrivateAnnotatedField()
 	{
-		dao.find(new WebQuery().eq("somePrivateString", "secret"));
+		assertThrows(PrivatePropertyUseRejected.class, () -> dao.find(new WebQuery().eq("somePrivateString", "secret")));
 	}
 
 
-	@Test(expected = PrivatePropertyUseRejected.class)
+	@Test
 	public void testCannotProjectPrivateAnnotatedField()
 	{
-		dao.find(new WebQuery().fetch("id,somePrivateString"));
+		assertThrows(PrivatePropertyUseRejected.class, () -> dao.find(new WebQuery().fetch("id,somePrivateString")));
 	}
 
 
-	@Test(expected = PrivatePropertyUseRejected.class)
+	@Test
 	public void testCannotSortByPrivateAnnotatedField()
 	{
-		dao.find(new WebQuery().orderAsc("somePrivateString"));
+		assertThrows(PrivatePropertyUseRejected.class, () -> dao.find(new WebQuery().orderAsc("somePrivateString")));
 	}
 
 
-	@Test(expected = PrivatePropertyUseRejected.class)
+	@Test
 	public void testNormalPrivilegedCallCannotConstrainPrivateAnnotatedField()
 	{
-		dao.find(new WebQuery().eq("somePrivateString", "secret"), JPASearchStrategy.AUTO, null, QueryPrivilegeData.NORMAL);
+		assertThrows(PrivatePropertyUseRejected.class, () -> dao.find(new WebQuery().eq("somePrivateString", "secret"), JPASearchStrategy.AUTO, null, QueryPrivilegeData.NORMAL));
 	}
 
 	@Test
@@ -211,18 +212,18 @@ public class DynamicQueryTest
 					                                                        .orderAsc("name")
 					                                                        .orderDesc("deprecated"), false);
 
-			assertEquals("Expecting 2 rows", 2, results.getList().size());
-			assertTrue("Expecting at least 3 columns", results.getList().get(0).length >= 3);
+			assertEquals(2, results.getList().size(), "Expecting 2 rows");
+			assertTrue(results.getList().get(0).length >= 3, "Expecting at least 3 columns");
 
 			// Assert that the expected value is output for the first row
-			assertEquals("row1 id", id1, results.getList().get(0)[0]);
-			assertEquals("row1 name", "Name1", results.getList().get(0)[1]);
-			assertEquals("row1 otherObject.name", "CName1", results.getList().get(0)[2]);
+			assertEquals(id1, results.getList().get(0)[0], "row1 id");
+			assertEquals("Name1", results.getList().get(0)[1], "row1 name");
+			assertEquals("CName1", results.getList().get(0)[2], "row1 otherObject.name");
 
 			// Assert that the expected value is output for the second row
-			assertEquals("row2 id", id2, results.getList().get(1)[0]);
-			assertEquals("row2 name", "Name2", results.getList().get(1)[1]);
-			assertEquals("row2 otherObject.name", "CName2", results.getList().get(1)[2]);
+			assertEquals(id2, results.getList().get(1)[0], "row2 id");
+			assertEquals("Name2", results.getList().get(1)[1], "row2 name");
+			assertEquals("CName2", results.getList().get(1)[2], "row2 otherObject.name");
 		}
 	}
 
@@ -261,8 +262,8 @@ public class DynamicQueryTest
 
 		final ConstrainedResultSet<Object[]> results = dao.find(new WebQuery().fetch("otherObject.entity"), JPASearchStrategy.AUTO, row->(Object[])row);
 
-		assertEquals("Expecting 2 rows", 2, results.getList().size());
-		assertTrue("Expecting at least 1 column", results.getList().get(0).length >= 1);
+		assertEquals(2, results.getList().size(), "Expecting 2 rows");
+		assertTrue(results.getList().get(0).length >= 1, "Expecting at least 1 column");
 
 
 		// N.B. we have not ordered the results so they may come back in any order, just assert that the set contains what we expect
@@ -308,8 +309,8 @@ public class DynamicQueryTest
 
 		final ConstrainedResultSet<Object[]> results = dao.find(new WebQuery().fetch("name"), JPASearchStrategy.AUTO, r->(Object[])r);
 
-		assertEquals("Expecting 2 rows", 2, results.getList().size());
-		assertTrue("Expecting at least 1 column", results.getList().get(0).length >= 1);
+		assertEquals(2, results.getList().size(), "Expecting 2 rows");
+		assertTrue(results.getList().get(0).length >= 1, "Expecting at least 1 column");
 
 		// N.B. we have not ordered the results so they may come back in any order, just assert that the set contains what we expect
 		{
@@ -412,13 +413,13 @@ public class DynamicQueryTest
 	}
 
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testNestedAssociatorThatIsMadeUpDoesNotWork() throws Exception
 	{
 		WebQuery query = new WebQuery().eq("otherObject.parent.fictionalfield.name", "Alice");
 
 		// Nonsense field shouldn't work
-		dao.findByUriQuery(query);
+		assertThrows(IllegalArgumentException.class, () -> dao.findByUriQuery(query));
 	}
 
 
@@ -483,10 +484,10 @@ public class DynamicQueryTest
 		dao.persist(obj);
 
 
-		assertEquals("starts Nam = 1", 1, dao.find(new WebQuery().decode("name STARTS Nam")).getList().size());
-		assertEquals("starts Alice = 0", 0, dao.find(new WebQuery().decode("name STARTS Alice")).getList().size());
+		assertEquals(1, dao.find(new WebQuery().decode("name STARTS Nam")).getList().size(), "starts Nam = 1");
+		assertEquals(0, dao.find(new WebQuery().decode("name STARTS Alice")).getList().size(), "starts Alice = 0");
 
-		assertEquals("not starts Alice = 1", 1, dao.find(new WebQuery().decode("name NOT STARTS Alice")).getList().size());
+		assertEquals(1, dao.find(new WebQuery().decode("name NOT STARTS Alice")).getList().size(), "not starts Alice = 1");
 	}
 
 
@@ -520,21 +521,21 @@ public class DynamicQueryTest
 			dao.persist(obj2);
 		}
 
-		assertEquals("deprecated=true matches 2 rows (with dao.find)",
-		             2,
-		             dao.find(new WebQuery().eq("deprecated", true)).getList().size());
+		assertEquals(2,
+		             dao.find(new WebQuery().eq("deprecated", true)).getList().size(),
+		             "deprecated=true matches 2 rows (with dao.find)");
 
 		// Test the same query with only COUNT
-		assertEquals("deprecated=true matches 2 rows (with dao.count)",
-		             2,
-		             dao.count(new WebQuery().eq("deprecated", true)));
+		assertEquals(2,
+		             dao.count(new WebQuery().eq("deprecated", true)),
+		             "deprecated=true matches 2 rows (with dao.count)");
 
 
 		// deprecated=false should match nothing
 		final ConstrainedResultSet<ParentEntity> resultset = dao.find(new WebQuery().eq("deprecated", false));
-		assertEquals("deprecated=false matches nothing (with dao.find)",
-		             0,
-		             resultset.getList().size());
+		assertEquals(0,
+		             resultset.getList().size(),
+		             "deprecated=false matches nothing (with dao.find)");
 	}
 
 
@@ -549,11 +550,11 @@ public class DynamicQueryTest
 		obj2.setName("Name2");
 		dao.persist(obj2);
 
-		assertEquals("regular find",
-		             getIds(Arrays.asList(obj1, obj2)),
-		             getIds(dao.find(new WebQuery().orderAsc("id")).getList()));
+		assertEquals(getIds(Arrays.asList(obj1, obj2)),
+		             getIds(dao.find(new WebQuery().orderAsc("id")).getList()),
+		             "regular find");
 
-		assertEquals("findIds", getIds(Arrays.asList(obj1, obj2)), dao.findIds(new WebQuery().orderAsc("id")).getList());
+		assertEquals(getIds(Arrays.asList(obj1, obj2)), dao.findIds(new WebQuery().orderAsc("id")).getList(), "findIds");
 	}
 
 
@@ -611,7 +612,7 @@ public class DynamicQueryTest
 		assertNotNull(resultset.getSql());
 
 		System.out.println(resultset.getSql());
-		assertEquals("Number of SQL statements executed", 2, resultset.getSql().size());
+		assertEquals(2, resultset.getSql().size(), "Number of SQL statements executed");
 	}
 
 
@@ -663,12 +664,12 @@ public class DynamicQueryTest
 		final Object[] f = (Object[]) (Object) dao.find(new WebQuery().eq("deprecated", false).fetch("name").orderAsc("name"),
 		                                                JPASearchStrategy.CUSTOM_PROJECTION).list.get(0);
 
-		assertEquals("a", new Object[] {1L}, a);
-		assertEquals("b", new Object[] {1L, "Name1"}, b);
-		assertEquals("c: uses distinct, but order reuses existing select", new Object[] {1L, "Name1", 1L}, c);
-		assertEquals("d", new Object[] {1L, false}, d); // shouldn't need to use distinct
-		assertEquals("e: distinct must add name to select", new Object[] {1L, false, false, "Name1"}, e); // need to use DISTINCT (unfortunately)
-		assertEquals("f: distinct required but no select modify", new Object[] {"Name1"}, f);
+		assertArrayEquals(new Object[] {1L}, a, "a");
+		assertArrayEquals(new Object[] {1L, "Name1"}, b, "b");
+		assertArrayEquals(new Object[] {1L, "Name1", 1L}, c, "c: uses distinct, but order reuses existing select");
+		assertArrayEquals(new Object[] {1L, false}, d, "d"); // shouldn't need to use distinct
+		assertArrayEquals(new Object[] {1L, false, false, "Name1"}, e, "e: distinct must add name to select"); // need to use DISTINCT (unfortunately)
+		assertArrayEquals(new Object[] {"Name1"}, f, "f: distinct required but no select modify");
 	}
 
 
@@ -716,10 +717,10 @@ public class DynamicQueryTest
 			ConstrainedResultSet<ParentEntity> results = dao.findByUriQuery(query);
 
 			// Must honour limit
-			assertEquals("without computeSize; must only have returned 2 results", 2, results.getList().size());
-			assertEquals("without computeSize; must have returned right 2 entities",
-			             Arrays.asList("Name3", "Name2"),
-			             results.getList().stream().map(e -> e.getName()).collect(Collectors.toList()));
+			assertEquals(2, results.getList().size(), "without computeSize; must only have returned 2 results");
+			assertEquals(Arrays.asList("Name3", "Name2"),
+			             results.getList().stream().map(e -> e.getName()).collect(Collectors.toList()),
+			             "without computeSize; must have returned right 2 entities");
 		}
 
 		// Next, test that we get the same results with computeSize=true (ensures the order is still present after size is computed)
@@ -728,13 +729,13 @@ public class DynamicQueryTest
 			ConstrainedResultSet<ParentEntity> results = dao.findByUriQuery(query);
 
 			// Must have correct total size
-			assertEquals("with computeSize; must have computed correct total size", Long.valueOf(3), results.getTotal());
+			assertEquals(Long.valueOf(3), results.getTotal(), "with computeSize; must have computed correct total size");
 
 			// Must honour limit
-			assertEquals("with computeSize; must only have returned 2 results", 2, results.getList().size());
-			assertEquals("with computeSize; must have returned right 2 entities",
-			             Arrays.asList("Name3", "Name2"),
-			             results.getList().stream().map(e -> e.getName()).collect(Collectors.toList()));
+			assertEquals(2, results.getList().size(), "with computeSize; must only have returned 2 results");
+			assertEquals(Arrays.asList("Name3", "Name2"),
+			             results.getList().stream().map(e -> e.getName()).collect(Collectors.toList()),
+			             "with computeSize; must have returned right 2 entities");
 		}
 	}
 

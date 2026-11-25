@@ -5,13 +5,13 @@ import com.peterphi.std.guice.restclient.resteasy.impl.jaxb.fastinfoset.FastInfo
 import com.peterphi.std.util.jaxb.JAXBSerialiserFactory;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedHashMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.annotation.Annotation;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WebQueryXmlTransportTest
 {

@@ -2,11 +2,11 @@ package com.peterphi.std.guice.hibernate.usertype;
 
 import com.peterphi.std.types.Timebase;
 import com.peterphi.std.types.Timecode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.Types;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TimecodeUserTypeTest
 {

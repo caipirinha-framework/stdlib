@@ -1,14 +1,14 @@
 package com.peterphi.std.guice.common.ognl;
 
 import ognl.Ognl;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class OgnlCompatibilityTest {
     public static class ScriptRoot {
@@ -44,7 +44,7 @@ public class OgnlCompatibilityTest {
         for (int i = 0; i <= OgnlEvaluator.COMPILE_THRESHOLD + 1; i++) {
             assertEquals(5, evaluator.evaluate("alice"));
         }
-        assertTrue("Expression must actually compile, rather than silently fall back", compiled.get());
+        assertTrue(compiled.get(), "Expression must actually compile, rather than silently fall back");
         assertEquals(3, evaluator.evaluate("bob"));
     }
 
@@ -55,7 +55,7 @@ public class OgnlCompatibilityTest {
             OgnlEvaluator evaluator = new OgnlEvaluator(expression, (text, instance) -> compiled.set(true));
             Object interpreted = evaluator.evaluate(new Object());
             evaluator.compile(new Object());
-            assertTrue("Expression must actually compile: " + expression, compiled.get());
+            assertTrue(compiled.get(), "Expression must actually compile: " + expression);
             assertEquals(interpreted, evaluator.evaluate(new Object()));
         }
     }

@@ -9,15 +9,15 @@ import com.google.inject.Injector;
 import com.google.inject.ProvisionException;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GuiceLifecycleModuleTest
 {
@@ -83,13 +83,13 @@ public class GuiceLifecycleModuleTest
 
 		final ClassWithStringBinding instance = injector.getInstance(ClassWithStringBinding.class);
 
-		assertNotNull("Creation of object should succeed", instance);
+		assertNotNull(instance, "Creation of object should succeed");
 		assertEquals("some value", instance.xyz);
-		assertTrue("postConstruct should have been called", POST_CONSTRUCT_WAS_CALLED);
+		assertTrue(POST_CONSTRUCT_WAS_CALLED, "postConstruct should have been called");
 	}
 
 
-	@Test(expected = ConfigurationException.class)
+	@Test
 	public void testPostConstructNotCalledOnMissingBinding()
 	{
 		POST_CONSTRUCT_WAS_CALLED = false;
@@ -97,18 +97,16 @@ public class GuiceLifecycleModuleTest
 		Injector injector = Guice.createInjector(new GuiceLifecycleModule());
 		try
 		{
-			final ClassWithStringBinding instance = injector.getInstance(ClassWithStringBinding.class);
-
-			assertNull("Creation of object should fail!", instance);
+			assertThrows(ConfigurationException.class, () -> injector.getInstance(ClassWithStringBinding.class));
 		}
 		finally
 		{
-			assertFalse("postConstruct should not have been called", POST_CONSTRUCT_WAS_CALLED);
+			assertFalse(POST_CONSTRUCT_WAS_CALLED, "postConstruct should not have been called");
 		}
 	}
 
 
-	@Test(expected = ProvisionException.class)
+	@Test
 	public void testPostConstructNotCalledOnFailureInDependencyConstructor()
 	{
 		POST_CONSTRUCT_WAS_CALLED = false;
@@ -116,13 +114,11 @@ public class GuiceLifecycleModuleTest
 		Injector injector = Guice.createInjector(new GuiceLifecycleModule());
 		try
 		{
-			final ClassWithBrokenDependency instance = injector.getInstance(ClassWithBrokenDependency.class);
-
-			assertNull("Creation of object should fail!", instance);
+			assertThrows(ProvisionException.class, () -> injector.getInstance(ClassWithBrokenDependency.class));
 		}
 		finally
 		{
-			assertFalse("postConstruct should not have been called", POST_CONSTRUCT_WAS_CALLED);
+			assertFalse(POST_CONSTRUCT_WAS_CALLED, "postConstruct should not have been called");
 		}
 	}
 }

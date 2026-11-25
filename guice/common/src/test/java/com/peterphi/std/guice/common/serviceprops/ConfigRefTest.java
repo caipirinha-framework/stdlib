@@ -5,9 +5,9 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.name.Named;
 import com.peterphi.std.guice.common.serviceprops.composite.GuiceConfig;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -43,7 +43,7 @@ public class ConfigRefTest
 		injector.injectMembers(this);
 
 		assertEquals("initial value", name);
-		assertEquals("enum value", SomeEnum.B, enumval.get(SomeEnum.class));
+		assertEquals(SomeEnum.B, enumval.get(SomeEnum.class), "enum value");
 
 		configuration.set("some-name", "changed value");
 

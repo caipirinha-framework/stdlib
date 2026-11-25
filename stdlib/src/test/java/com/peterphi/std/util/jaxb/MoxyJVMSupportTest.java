@@ -1,7 +1,7 @@
 package com.peterphi.std.util.jaxb;
 
 import org.eclipse.persistence.asm.EclipseLinkASMClassWriter;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.text.MessageFormat;
 import java.util.logging.Handler;

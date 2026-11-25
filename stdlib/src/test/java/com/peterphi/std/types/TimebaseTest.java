@@ -1,9 +1,9 @@
 package com.peterphi.std.types;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 public class TimebaseTest
 {
@@ -53,11 +53,11 @@ public class TimebaseTest
 	{
 		final double delta = 0;
 
-		assertEquals("1 hour @ 30fps (108000 frames) is the same duration as 107892 frames @ 29.97",
-		             107892D,
+		assertEquals(107892D,
 		             Timebase.NTSC.resample(108000, Timebase.HZ_30),
-		             delta);
-		assertEquals("1 hour @ 29.97fps (107892 frames) is 108000 frames in 30fps", 108000D, Timebase.HZ_30.resample(107892, Timebase.NTSC), delta);
+		             delta,
+		             "1 hour @ 30fps (108000 frames) is the same duration as 107892 frames @ 29.97");
+		assertEquals(108000D, Timebase.HZ_30.resample(107892, Timebase.NTSC), delta, "1 hour @ 29.97fps (107892 frames) is 108000 frames in 30fps");
 	}
 
 	@Test

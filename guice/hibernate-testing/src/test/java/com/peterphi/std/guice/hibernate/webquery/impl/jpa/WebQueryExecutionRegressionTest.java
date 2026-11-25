@@ -24,13 +24,13 @@ import jakarta.persistence.OneToMany;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -39,20 +39,15 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Exercises SQL page boundaries against both supported test databases. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{0}")
+@ValueSource(strings = {"hsqldb", "postgresql"})
 public class WebQueryExecutionRegressionTest
 {
-	@Parameterized.Parameters(name = "{0}")
-	public static List<String> databases()
-	{
-		return List.of("hsqldb", "postgresql");
-	}
-
 	private static EmbeddedPostgres postgres;
 	private final String database;
 	private SessionFactory factory;
@@ -64,20 +59,20 @@ public class WebQueryExecutionRegressionTest
 		this.database = database;
 	}
 
-	@BeforeClass
+	@BeforeAll
 	public static void startPostgres() throws Exception
 	{
 		postgres = EmbeddedPostgres.builder().start();
 	}
 
-	@AfterClass
+	@AfterAll
 	public static void stopPostgres() throws Exception
 	{
 		if (postgres != null)
 			postgres.close();
 	}
 
-	@Before
+	@BeforeEach
 	public void setup()
 	{
 		Configuration config = new Configuration();
@@ -114,7 +109,7 @@ public class WebQueryExecutionRegressionTest
 		});
 	}
 
-	@After
+	@AfterEach
 	public void tearDown()
 	{
 		if (factory != null)

@@ -1,6 +1,6 @@
 package com.peterphi.std.thymeleaf;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.model.IProcessableElementTag;
@@ -9,8 +9,8 @@ import org.thymeleaf.templateresolver.StringTemplateResolver;
 
 import java.io.StringWriter;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class TestIdAttributeRemovalDialectTest
 {
@@ -43,7 +43,7 @@ public class TestIdAttributeRemovalDialectTest
 			for (int i = 0; i < model.size(); i++)
 			{
 				if (model.get(i) instanceof IProcessableElementTag tag)
-					assertFalse("Literal attribute retained in cached template", tag.hasAttribute("data-testid"));
+					assertFalse(tag.hasAttribute("data-testid"), "Literal attribute retained in cached template");
 			}
 		}
 

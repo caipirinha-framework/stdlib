@@ -1,8 +1,8 @@
 package com.peterphi.std.guice.restclient.jaxb.webquery;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WebQueryParserTest
 {
@@ -10,18 +10,18 @@ public class WebQueryParserTest
 	public void testSimpleFragments()
 	{
 		assertEquals("id = 1", WebQueryParser.parse("id=1", new WebQuery()).toQueryFragment());
-		assertEquals("multiline comment",
-		             "id = 1",
-		             WebQueryParser.parse("/* some comment goes here */ id=1", new WebQuery()).toQueryFragment());
-		assertEquals("single line comment",
-		             "id = 1",
-		             WebQueryParser.parse("id=1 --some comment", new WebQuery()).toQueryFragment());
-		assertEquals("single line comment",
-		             "id = 1\nAND id = 2",
-		             WebQueryParser.parse("id=1 //some comment\nand id=2", new WebQuery()).toQueryFragment());
-		assertEquals("single line comment in middle of expression",
-		             "id = 1",
-		             WebQueryParser.parse("id= -- some comment\n1 --some other comment", new WebQuery()).toQueryFragment());
+		assertEquals("id = 1",
+		             WebQueryParser.parse("/* some comment goes here */ id=1", new WebQuery()).toQueryFragment(),
+		             "multiline comment");
+		assertEquals("id = 1",
+		             WebQueryParser.parse("id=1 --some comment", new WebQuery()).toQueryFragment(),
+		             "single line comment");
+		assertEquals("id = 1\nAND id = 2",
+		             WebQueryParser.parse("id=1 //some comment\nand id=2", new WebQuery()).toQueryFragment(),
+		             "single line comment");
+		assertEquals("id = 1",
+		             WebQueryParser.parse("id= -- some comment\n1 --some other comment", new WebQuery()).toQueryFragment(),
+		             "single line comment in middle of expression");
 
 		assertEquals("name NOT STARTS alice", WebQueryParser.parse("name not starts alice", new WebQuery()).toQueryFragment());
 		assertEquals("id != 1", WebQueryParser.parse("id!=1", new WebQuery()).toQueryFragment());
@@ -39,7 +39,7 @@ public class WebQueryParserTest
 		assertEquals("dob >= now-PT5M", WebQueryParser.parse("dob >= now-PT5M", new WebQuery()).toQueryFragment());
 		assertEquals("dob >= 2000-01-01T00:00:00Z",
 		             WebQueryParser.parse("dob >= '2000-01-01T00:00:00Z'", new WebQuery()).toQueryFragment());
-		assertEquals("Allow GT in use of >", "id > 1", WebQueryParser.parse("id GT 1", new WebQuery()).toQueryFragment());
+		assertEquals("id > 1", WebQueryParser.parse("id GT 1", new WebQuery()).toQueryFragment(), "Allow GT in use of >");
 	}
 
 
@@ -73,35 +73,35 @@ public class WebQueryParserTest
 	@Test
 	public void testWithSelect()
 	{
-		assertEquals("select with constraints",
-		             "SELECT id WHERE name = Bob",
-		             WebQuery.parse("SELECT id WHERE name = Bob").toQueryFragment().replace("\t", "").replace("\n", " "));
-		assertEquals("no constraints, no order",
-		             "SELECT id",
-		             WebQuery.parse("SELECT id").toQueryFragment().replace("\t", "").replace("\n", " "));
-		assertEquals("order and no constraints",
-		             "SELECT id ORDER BY id",
-		             WebQuery.parse("SELECT id ORDER BY id ASC").toQueryFragment().replace("\t", "").replace("\n", " "));
+		assertEquals("SELECT id WHERE name = Bob",
+		             WebQuery.parse("SELECT id WHERE name = Bob").toQueryFragment().replace("\t", "").replace("\n", " "),
+		             "select with constraints");
+		assertEquals("SELECT id",
+		             WebQuery.parse("SELECT id").toQueryFragment().replace("\t", "").replace("\n", " "),
+		             "no constraints, no order");
+		assertEquals("SELECT id ORDER BY id",
+		             WebQuery.parse("SELECT id ORDER BY id ASC").toQueryFragment().replace("\t", "").replace("\n", " "),
+		             "order and no constraints");
 	}
 
 	@Test
 	public void testWithExpand()
 	{
-		assertEquals("expand with -idcollections",
-		             "EXPAND parents,children,not:idcollections WHERE name = Bob",
-		             WebQuery.parse("EXPAND parents,children,'-idcollections' WHERE name = Bob").toQueryFragment().replace("\t", "").replace("\n", " "));
-		assertEquals("expand with -idcollections expressed with not:",
-		             "EXPAND parents,children,not:idcollections WHERE name = Bob",
-		             WebQuery.parse("EXPAND parents,children,not:idcollections WHERE name = Bob").toQueryFragment().replace("\t", "").replace("\n", " "));
+		assertEquals("EXPAND parents,children,not:idcollections WHERE name = Bob",
+		             WebQuery.parse("EXPAND parents,children,'-idcollections' WHERE name = Bob").toQueryFragment().replace("\t", "").replace("\n", " "),
+		             "expand with -idcollections");
+		assertEquals("EXPAND parents,children,not:idcollections WHERE name = Bob",
+		             WebQuery.parse("EXPAND parents,children,not:idcollections WHERE name = Bob").toQueryFragment().replace("\t", "").replace("\n", " "),
+		             "expand with -idcollections expressed with not:");
 	}
 
 
 	@Test
 	public void testEmptyQueryWithOrder()
 	{
-		assertEquals("empty text query", "", WebQueryParser.parse("", new WebQuery()).toQueryFragment());
-		assertEquals("text query with only ordering",
-		             "ORDER BY id",
-		             WebQueryParser.parse("ORDER BY id", new WebQuery()).toQueryFragment());
+		assertEquals("", WebQueryParser.parse("", new WebQuery()).toQueryFragment(), "empty text query");
+		assertEquals("ORDER BY id",
+		             WebQueryParser.parse("ORDER BY id", new WebQuery()).toQueryFragment(),
+		             "text query with only ordering");
 	}
 }

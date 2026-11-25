@@ -1,14 +1,14 @@
 package com.peterphi.std.types;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TimecodeComparatorTest
 {
@@ -68,9 +68,9 @@ public class TimecodeComparatorTest
 		final Timecode testB = Timecode.getInstance("01:00:01:00", Timebase.HZ_25); // within range
 		final Timecode testC = Timecode.getInstance("11:00:00:00", Timebase.HZ_25); // out of range (right of range)
 
-		assertFalse("A should not be between start+end", TimecodeComparator.between(testA, start, end));
-		assertTrue("B should be between start+end", TimecodeComparator.between(testB, start, end));
-		assertFalse("C should not be between start+end", TimecodeComparator.between(testC, start, end));
+		assertFalse(TimecodeComparator.between(testA, start, end), "A should not be between start+end");
+		assertTrue(TimecodeComparator.between(testB, start, end), "B should be between start+end");
+		assertFalse(TimecodeComparator.between(testC, start, end), "C should not be between start+end");
 	}
 
 
@@ -83,7 +83,7 @@ public class TimecodeComparatorTest
 		                                      Timecode.getInstance("-09:09:09:09@25"),
 		                                      Timecode.getInstance("10:10:10:10@25"));
 
-		assertEquals("min", "-10:10:10:10@25", min.toEncodedString());
+		assertEquals("-10:10:10:10@25", min.toEncodedString(), "min");
 	}
 
 
@@ -96,6 +96,6 @@ public class TimecodeComparatorTest
 		                                      Timecode.getInstance("-09:09:09:09@25"),
 		                                      Timecode.getInstance("10:10:10:10@25"));
 
-		assertEquals("max", "10:10:10:10@25", max.toEncodedString());
+		assertEquals("10:10:10:10@25", max.toEncodedString(), "max");
 	}
 }

@@ -1,9 +1,10 @@
 package com.peterphi.std.guice.common.ognl;
 
 import org.apache.commons.lang.text.StrLookup;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class StrTemplateTest
 {
@@ -117,24 +118,24 @@ public class StrTemplateTest
 	}
 
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testOpenNoCloseAtAll()
 	{
-		eval(null, "${x");
+		assertThrows(IllegalArgumentException.class, () -> eval(null, "${x"));
 	}
 
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testOpenNoCloseAtDepth3()
 	{
-		eval(null, "${{{x");
+		assertThrows(IllegalArgumentException.class, () -> eval(null, "${{{x"));
 	}
 
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testOpenNoCloseOfSameDepth()
 	{
-		eval(null, "${{{x}");
+		assertThrows(IllegalArgumentException.class, () -> eval(null, "${{{x}"));
 	}
 
 
@@ -151,6 +152,6 @@ public class StrTemplateTest
 
 		final String actual = StrTemplate.evaluate(template, lookup);
 
-		assertEquals("Eval of: " + template, expect, actual);
+		assertEquals(expect, actual, "Eval of: " + template);
 	}
 }

@@ -1,10 +1,11 @@
 package com.peterphi.std.guice.common.cached.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CancellationException;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class LazyValueTest
 {
@@ -13,9 +14,9 @@ public class LazyValueTest
 	{
 		final var val = LazyValue.of("test");
 
-		assertEquals("isComputed before val requested", true, val.isComputed());
-		assertEquals("value", "test", val.get());
-		assertEquals("isComputed after val requested", true, val.isComputed());
+		assertEquals(true, val.isComputed(), "isComputed before val requested");
+		assertEquals("test", val.get(), "value");
+		assertEquals(true, val.isComputed(), "isComputed after val requested");
 	}
 
 
@@ -24,7 +25,7 @@ public class LazyValueTest
 	{
 		final var val = LazyValue.of("test");
 		val.cancel();
-		assertEquals("value", "test", val.get());
+		assertEquals("test", val.get(), "value");
 	}
 
 
@@ -33,19 +34,19 @@ public class LazyValueTest
 	{
 		final var val = new LazyValue<>("test" :: toString);
 
-		assertEquals("isComputed before val requested", false, val.isComputed());
-		assertEquals("value", "test", val.get());
-		assertEquals("isComputed after val requested", true, val.isComputed());
+		assertEquals(false, val.isComputed(), "isComputed before val requested");
+		assertEquals("test", val.get(), "value");
+		assertEquals(true, val.isComputed(), "isComputed after val requested");
 		val.cancel();
-		assertEquals("value after post-compute cancel request", "test", val.get());
+		assertEquals("test", val.get(), "value after post-compute cancel request");
 	}
 
 
-	@Test(expected = CancellationException.class)
+	@Test
 	public void testCancel()
 	{
 		final var val = new LazyValue<>("test" :: toString);
 		val.cancel();
-		val.get();
+		assertThrows(CancellationException.class, () -> val.get());
 	}
 }

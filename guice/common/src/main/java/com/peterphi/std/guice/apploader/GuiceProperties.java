@@ -30,7 +30,7 @@ public class GuiceProperties
 	@Doc("If true, force the use of Eclipse MOXy for JAXB serialisation (default true)")
 	public static final String MOXY_ENABLED = "guice.jaxb.moxy";
 
-	@Doc("Set to true when a guice environment is constructed as part of a GuiceUnit test; this allows roles and modules to respond appropriately to a test environment")
+	@Doc("Set to true when a Guice environment is constructed for a @GuiceTest, so roles and modules can detect a test environment")
 	public static final String UNIT_TEST = "unit-test";
 
 	@Doc("The instance id assigned to this execution of the service (internal property, should not be set by user)")

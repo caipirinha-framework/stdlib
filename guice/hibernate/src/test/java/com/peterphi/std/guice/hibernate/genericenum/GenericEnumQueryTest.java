@@ -5,7 +5,7 @@ import com.peterphi.std.guice.database.annotation.Transactional;
 import com.peterphi.std.guice.hibernate.dao.HibernateDao;
 import com.peterphi.std.guice.hibernate.webquery.impl.QEntityFactory;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WebQuery;
-import com.peterphi.std.guice.testing.GuiceUnit;
+import com.peterphi.std.guice.testing.GuiceTest;
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.GuiceConfig;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,12 +13,11 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(GuiceUnit.class)
+@GuiceTest
 @GuiceConfig(config = "hibernate-tests-in-memory-hsqldb.properties", classPackages = GenericEnumQueryTest.class)
 public class GenericEnumQueryTest
 {

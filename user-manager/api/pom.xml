@@ -30,13 +30,5 @@
 			<artifactId>resteasy-core</artifactId>
 			<version>${resteasy.version}</version>
 		</dependency>
-
-		<!-- JUnit -->
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>${junit.version}</version>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 </project>

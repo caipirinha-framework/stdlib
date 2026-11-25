@@ -5,21 +5,20 @@ import com.peterphi.std.guice.database.annotation.Transactional;
 import com.peterphi.std.guice.hibernate.dao.HibernateDao;
 import com.peterphi.std.guice.hibernate.webquery.ConstrainedResultSet;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WebQuery;
-import com.peterphi.std.guice.testing.GuiceUnit;
+import com.peterphi.std.guice.testing.GuiceTest;
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.GuiceConfig;
 import org.apache.commons.lang.StringUtils;
 import org.hibernate.Hibernate;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(GuiceUnit.class)
+@GuiceTest
 @GuiceConfig(config = "hibernate-tests-in-memory-hsqldb.properties", classPackages = ParentEntity.class)
 public class EntityCollectionTest
 {
@@ -73,7 +72,7 @@ public class EntityCollectionTest
 
 			System.out.println(results);
 
-			assertEquals("Should only need 2 SQL statements", 2, resultset.getSql().size());
+			assertEquals(2, resultset.getSql().size(), "Should only need 2 SQL statements");
 
 			for (ParentEntity result : results)
 			{
@@ -81,10 +80,10 @@ public class EntityCollectionTest
 				                   " - children " +
 				                   result.getChildren().stream().map(c -> c.getId().toString()).collect(Collectors.joining(",")));
 
-				assertEquals("each parent should have 3 children", 3, result.getChildren().size());
+				assertEquals(3, result.getChildren().size(), "each parent should have 3 children");
 			}
 
-			assertEquals("should be 2 parent entities", 2, results.size());
+			assertEquals(2, results.size(), "should be 2 parent entities");
 		}
 	}
 
@@ -107,12 +106,12 @@ public class EntityCollectionTest
 			System.out.println("SQL: " + StringUtils.join(resultset.getSql(), '\n'));
 			System.out.println("SQL Statements: " + resultset.getSql().size());
 
-			assertEquals("Should have 2 result match", 2, resultset.getList().size());
-			assertEquals("Should need 2 SQL statements", 2, resultset.getSql().size());
+			assertEquals(2, resultset.getList().size(), "Should have 2 result match");
+			assertEquals(2, resultset.getSql().size(), "Should need 2 SQL statements");
 
-			assertEquals("constraining query should have 2 independent joins to Child",
-			             2,
-			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left join child_entity"));
+			assertEquals(2,
+			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left join child_entity"),
+			             "constraining query should have 2 independent joins to Child");
 		}
 	}
 
@@ -136,12 +135,12 @@ public class EntityCollectionTest
 			System.out.println("SQL: " + StringUtils.join(resultset.getSql(), '\n'));
 			System.out.println("SQL Statements: " + resultset.getSql().size());
 
-			assertEquals("Should have 2 result match", 2, resultset.getList().size());
-			assertEquals("Should need 2 SQL statements", 2, resultset.getSql().size());
+			assertEquals(2, resultset.getList().size(), "Should have 2 result match");
+			assertEquals(2, resultset.getSql().size(), "Should need 2 SQL statements");
 
-			assertEquals("constraining query should have 1 join to Child in: " + resultset.getSql().get(0),
-			             1,
-			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left join child_entity"));
+			assertEquals(1,
+			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left join child_entity"),
+			             "constraining query should have 1 join to Child in: " + resultset.getSql().get(0));
 		}
 	}
 
@@ -165,12 +164,12 @@ public class EntityCollectionTest
 			System.out.println("SQL: " + StringUtils.join(resultset.getSql(), '\n'));
 			System.out.println("SQL Statements: " + resultset.getSql().size());
 
-			assertEquals("Should have 2 result match", 2, resultset.getList().size());
-			assertEquals("Should need 2 SQL statements", 2, resultset.getSql().size());
+			assertEquals(2, resultset.getList().size(), "Should have 2 result match");
+			assertEquals(2, resultset.getSql().size(), "Should need 2 SQL statements");
 
-			assertEquals("constraining query should have 1 join to Child",
-			             1,
-			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left join child_entity"));
+			assertEquals(1,
+			             StringUtils.countMatches(resultset.getSql().get(0).toLowerCase(), "left join child_entity"),
+			             "constraining query should have 1 join to Child");
 		}
 	}
 
@@ -187,7 +186,7 @@ public class EntityCollectionTest
 
 			System.out.println("SQL: " + StringUtils.join(resultset.getSql(), "\n"));
 
-			assertEquals("should be 1 query", 1, resultset.getSql().size());
+			assertEquals(1, resultset.getSql().size(), "should be 1 query");
 		}
 	}
 
@@ -208,7 +207,7 @@ public class EntityCollectionTest
 
 			System.out.println(results);
 
-			assertEquals("Should only need 1 SQL statement (get entities)", 1, resultset.getSql().size());
+			assertEquals(1, resultset.getSql().size(), "Should only need 1 SQL statement (get entities)");
 
 			for (ParentEntity result : results)
 			{
@@ -216,10 +215,10 @@ public class EntityCollectionTest
 				                   " - children " +
 				                   result.getChildren().stream().map(c -> c.getId().toString()).collect(Collectors.joining(",")));
 
-				assertEquals("each parent should have 3 children", 3, result.getChildren().size());
+				assertEquals(3, result.getChildren().size(), "each parent should have 3 children");
 			}
 
-			assertEquals("should be 2 parent entities", 2, results.size());
+			assertEquals(2, results.size(), "should be 2 parent entities");
 		}
 	}
 
@@ -240,7 +239,7 @@ public class EntityCollectionTest
 
 			System.out.println(results);
 
-			assertEquals("Should only need 1 SQL statement", 1, resultset.getSql().size());
+			assertEquals(1, resultset.getSql().size(), "Should only need 1 SQL statement");
 
 			for (ParentEntity result : results)
 			{
@@ -248,10 +247,10 @@ public class EntityCollectionTest
 				                   " - children " +
 				                   result.getChildren().stream().map(c -> c.getId().toString()).collect(Collectors.joining(",")));
 
-				assertEquals("each parent should have 3 children", 3, result.getChildren().size());
+				assertEquals(3, result.getChildren().size(), "each parent should have 3 children");
 			}
 
-			assertEquals("should be 2 parent entities", 2, results.size());
+			assertEquals(2, results.size(), "should be 2 parent entities");
 		}
 	}
 
@@ -270,7 +269,7 @@ public class EntityCollectionTest
 			System.out.println("SQL: " + StringUtils.join(resultset.getSql(), "\n"));
 			System.out.println("SQL Statements: " + resultset.getSql().size());
 
-			assertEquals("Should only need 1 SQL statement", 1, resultset.getSql().size());
+			assertEquals(1, resultset.getSql().size(), "Should only need 1 SQL statement");
 		}
 	}
 
@@ -294,7 +293,7 @@ public class EntityCollectionTest
 
 			System.out.println(results);
 
-			assertEquals("Should only need 2 SQL statements (get IDs, get entities)", 2, resultset.getSql().size());
+			assertEquals(2, resultset.getSql().size(), "Should only need 2 SQL statements (get IDs, get entities)");
 
 			for (ParentEntity result : results)
 			{
@@ -302,10 +301,10 @@ public class EntityCollectionTest
 				                   " - children " +
 				                   result.getChildren().stream().map(c -> c.getId().toString()).collect(Collectors.joining(",")));
 
-				assertEquals("each parent should have 3 children", 3, result.getChildren().size());
+				assertEquals(3, result.getChildren().size(), "each parent should have 3 children");
 			}
 
-			assertEquals("should be 2 parent entities", 2, results.size());
+			assertEquals(2, results.size(), "should be 2 parent entities");
 		}
 	}
 
@@ -404,11 +403,11 @@ public class EntityCollectionTest
 
 		final ParentEntity entity = dao.getById(ids.get(0));
 
-		assertTrue("Parent should be initialised", Hibernate.isInitialized(entity));
-		assertTrue("Parent.Children should be initialised", Hibernate.isInitialized(entity.getChildren()));
+		assertTrue(Hibernate.isInitialized(entity), "Parent should be initialised");
+		assertTrue(Hibernate.isInitialized(entity.getChildren()), "Parent.Children should be initialised");
 		for (ChildEntity childEntity : entity.getChildren())
 		{
-			assertTrue("ChildEntity should be initialised", Hibernate.isInitialized(childEntity));
+			assertTrue(Hibernate.isInitialized(childEntity), "ChildEntity should be initialised");
 		}
 	}
 
@@ -422,11 +421,11 @@ public class EntityCollectionTest
 
 		for (ParentEntity entity : entities)
 		{
-			assertTrue("Parent should be initialised", Hibernate.isInitialized(entity));
-			assertTrue("Parent.Children should be initialised", Hibernate.isInitialized(entity.getChildren()));
+			assertTrue(Hibernate.isInitialized(entity), "Parent should be initialised");
+			assertTrue(Hibernate.isInitialized(entity.getChildren()), "Parent.Children should be initialised");
 			for (ChildEntity childEntity : entity.getChildren())
 			{
-				assertTrue("ChildEntity should be initialised", Hibernate.isInitialized(childEntity));
+				assertTrue(Hibernate.isInitialized(childEntity), "ChildEntity should be initialised");
 			}
 		}
 	}

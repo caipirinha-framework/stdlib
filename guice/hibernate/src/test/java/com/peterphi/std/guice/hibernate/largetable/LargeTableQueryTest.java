@@ -5,19 +5,18 @@ import com.peterphi.std.guice.database.annotation.Transactional;
 import com.peterphi.std.guice.hibernate.dao.HibernateDao;
 import com.peterphi.std.guice.hibernate.webquery.ConstrainedResultSet;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WebQuery;
-import com.peterphi.std.guice.testing.GuiceUnit;
+import com.peterphi.std.guice.testing.GuiceTest;
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.GuiceConfig;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(GuiceUnit.class)
+@GuiceTest
 @GuiceConfig(config = "hibernate-tests-in-memory-hsqldb.properties", classPackages = LargeTableQueryTest.class)
 public class LargeTableQueryTest
 {
@@ -42,15 +41,15 @@ public class LargeTableQueryTest
 		dao.persist(new LargeTableSimplePKEntity("Eve"));
 
 		// Try a regular query
-		assertEquals("custom-coded count should return 2", 2, dao.countWithAInName());
+		assertEquals(2, dao.countWithAInName(), "custom-coded count should return 2");
 
 		// Now try a web query
 		final ConstrainedResultSet<Long> result = dao.findIdsByUriQuery(new WebQuery().computeSize(true).contains("name", "a"));
 
-		assertEquals("total results for generic query should be 2", Long.valueOf(2), result.getTotal());
-		assertEquals("generic get IDs should return 2 results",
-		             new ArrayList<>(Arrays.asList(3L, 4L)),
-		             new ArrayList<>(result.getList()));
+		assertEquals(Long.valueOf(2), result.getTotal(), "total results for generic query should be 2");
+		assertEquals(new ArrayList<>(Arrays.asList(3L, 4L)),
+		             new ArrayList<>(result.getList()),
+		             "generic get IDs should return 2 results");
 	}
 
 
@@ -133,8 +132,8 @@ public class LargeTableQueryTest
 
 		final List<SomePrimaryKey> results = complexPKdao.findIdsByUriQuery(new WebQuery().contains("name", "a")).getList();
 
-		assertEquals("expect 2 results", 2, results.size());
-		assertEquals("expect results to be of id type", SomePrimaryKey.class, results.get(0).getClass());
-		assertEquals("expect results to be of id type", SomePrimaryKey.class, results.get(1).getClass());
+		assertEquals(2, results.size(), "expect 2 results");
+		assertEquals(SomePrimaryKey.class, results.get(0).getClass(), "expect results to be of id type");
+		assertEquals(SomePrimaryKey.class, results.get(1).getClass(), "expect results to be of id type");
 	}
 }

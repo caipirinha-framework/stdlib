@@ -4,12 +4,12 @@ import com.google.inject.Injector;
 import com.peterphi.std.guice.apploader.BasicSetup;
 import com.peterphi.std.guice.apploader.impl.GuiceBuilder;
 import com.peterphi.std.guice.common.retry.annotation.Retry;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class RetryMethodInterceptorTest
 {

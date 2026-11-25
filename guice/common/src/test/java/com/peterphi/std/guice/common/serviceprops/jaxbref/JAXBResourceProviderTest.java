@@ -5,21 +5,20 @@ import com.codahale.metrics.health.HealthCheckRegistry;
 import com.peterphi.std.guice.common.serviceprops.composite.GuiceConfig;
 import com.peterphi.std.util.jaxb.JAXBSerialiserFactory;
 import com.peterphi.std.util.jaxb.exception.JAXBRuntimeException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests that {@link JAXBResourceProvider} only hands back a new object when the underlying config has actually changed (so that
@@ -31,8 +30,8 @@ public class JAXBResourceProviderTest
 
 	JAXBSerialiserFactory SERIALISER_FACTORY = new JAXBSerialiserFactory(false);
 
-	@Rule
-	public TemporaryFolder folder = new TemporaryFolder();
+	@TempDir
+	File folder;
 
 	private final HealthCheckRegistry healthChecks = new HealthCheckRegistry();
 
@@ -79,7 +78,7 @@ public class JAXBResourceProviderTest
 	{
 		final Map<String, HealthCheck.Result> results = healthChecks.runHealthChecks();
 
-		assertEquals("expected exactly one registered health check", 1, results.size());
+		assertEquals(1, results.size(), "expected exactly one registered health check");
 
 		return results.values().iterator().next();
 	}
@@ -88,7 +87,7 @@ public class JAXBResourceProviderTest
 	@Test
 	public void testUnchangedFileReturnsSameInstance() throws Exception
 	{
-		final File file = writeConfig(folder.newFile("mytype.xml"), "<MyType name=\"test\"/>");
+		final File file = writeConfig(new File(folder, "mytype.xml"), "<MyType name=\"test\"/>");
 
 		final GuiceConfig config = new GuiceConfig();
 		config.set(PROPERTY, file.getAbsolutePath());
@@ -103,14 +102,14 @@ public class JAXBResourceProviderTest
 		final MyType b = provider.get();
 
 		assertEquals(new MyType("test", true), a);
-		assertSame("unchanged config file should keep returning the same object", a, b);
+		assertSame(a, b, "unchanged config file should keep returning the same object");
 	}
 
 
 	@Test
 	public void testChangedFileReturnsNewInstance() throws Exception
 	{
-		final File file = writeConfig(folder.newFile("mytype.xml"), "<MyType name=\"test1\"/>");
+		final File file = writeConfig(new File(folder, "mytype.xml"), "<MyType name=\"test1\"/>");
 
 		final GuiceConfig config = new GuiceConfig();
 		config.set(PROPERTY, file.getAbsolutePath());
@@ -125,7 +124,7 @@ public class JAXBResourceProviderTest
 
 		assertEquals(new MyType("test1", true), a);
 		assertEquals(new MyType("test2", true), b);
-		assertNotSame("changed config file should return a new object", a, b);
+		assertNotSame(a, b, "changed config file should return a new object");
 	}
 
 
@@ -137,7 +136,7 @@ public class JAXBResourceProviderTest
 
 		final JAXBResourceProvider<MyType> provider = createProvider(config);
 
-		assertSame("unchanged literal config should keep returning the same object", provider.get(), provider.get());
+		assertSame(provider.get(), provider.get(), "unchanged literal config should keep returning the same object");
 	}
 
 
@@ -156,14 +155,14 @@ public class JAXBResourceProviderTest
 		final MyType b = provider.get();
 
 		assertEquals(new MyType("test2", true), b);
-		assertNotSame("changed literal config should return a new object", a, b);
+		assertNotSame(a, b, "changed literal config should return a new object");
 	}
 
 
 	@Test
 	public void testHealthCheckDoesNotCreateNewInstances() throws Exception
 	{
-		final File file = writeConfig(folder.newFile("mytype.xml"), "<MyType name=\"test\"/>");
+		final File file = writeConfig(new File(folder, "mytype.xml"), "<MyType name=\"test\"/>");
 
 		final GuiceConfig config = new GuiceConfig();
 		config.set(PROPERTY, file.getAbsolutePath());
@@ -172,16 +171,16 @@ public class JAXBResourceProviderTest
 
 		final MyType a = provider.get();
 
-		assertTrue("health check should be healthy for a valid config", runHealthCheck().isHealthy());
+		assertTrue(runHealthCheck().isHealthy(), "health check should be healthy for a valid config");
 
-		assertSame("health check should not cause a new object to be created", a, provider.get());
+		assertSame(a, provider.get(), "health check should not cause a new object to be created");
 	}
 
 
 	@Test
 	public void testUnparseableFileFailsHealthCheck() throws Exception
 	{
-		final File file = writeConfig(folder.newFile("mytype.xml"), "<MyType name=\"test\"/>");
+		final File file = writeConfig(new File(folder, "mytype.xml"), "<MyType name=\"test\"/>");
 
 		final GuiceConfig config = new GuiceConfig();
 		config.set(PROPERTY, file.getAbsolutePath());
@@ -203,6 +202,6 @@ public class JAXBResourceProviderTest
 			// Expected
 		}
 
-		assertFalse("health check should be unhealthy for an unparseable config", runHealthCheck().isHealthy());
+		assertFalse(runHealthCheck().isHealthy(), "health check should be unhealthy for an unparseable config");
 	}
 }

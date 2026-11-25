@@ -4,9 +4,9 @@ import com.google.inject.Injector;
 import com.peterphi.std.guice.apploader.BasicSetup;
 import com.peterphi.std.guice.apploader.impl.GuiceBuilder;
 import com.peterphi.std.guice.common.cached.annotation.Cache;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CacheMethodInterceptorTest
 {
@@ -41,7 +41,7 @@ public class CacheMethodInterceptorTest
 		//make a call, a fresh value should be returned
 		test.getValue();
 		//so now the number of real calls to the method is 2
-		assertEquals("number of real calls to method after longer sleep", 2, test.getRealCalls());
+		assertEquals(2, test.getRealCalls(), "number of real calls to method after longer sleep");
 	}
 
 

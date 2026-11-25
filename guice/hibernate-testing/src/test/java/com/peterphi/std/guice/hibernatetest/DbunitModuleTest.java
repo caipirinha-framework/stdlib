@@ -6,18 +6,17 @@ import com.peterphi.std.guice.common.shutdown.iface.ShutdownManager;
 import com.peterphi.std.guice.hibernate.dao.HibernateDao;
 import com.peterphi.std.guice.hibernate.module.HibernateTransaction;
 import com.peterphi.std.guice.hibernate.module.TransactionHelper;
-import com.peterphi.std.guice.testing.GuiceUnit;
+import com.peterphi.std.guice.testing.GuiceTest;
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.GuiceConfig;
 import org.dbunit.assertion.DbUnitAssert;
 import org.dbunit.dataset.IDataSet;
 import org.dbunit.dataset.xml.FlatXmlDataSet;
 import org.dbunit.dataset.xml.FlatXmlDataSetBuilder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
 
-@RunWith(GuiceUnit.class)
+@GuiceTest
 @GuiceConfig(config = "com/peterphi/std/guice/hibernatetest/hsqldb-in-memory.properties", classPackages = GroupEntity.class)
 public class DbunitModuleTest
 {

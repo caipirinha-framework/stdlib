@@ -1,11 +1,11 @@
 package com.peterphi.std.guice.common.retry.retry.backoff;
 
 import com.peterphi.std.threading.Timeout;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExponentialBackoffTest
 {
@@ -17,7 +17,7 @@ public class ExponentialBackoffTest
 	{
 		ExponentialBackoff svc = new ExponentialBackoff(ONE_MILLISECOND, 2);
 
-		assertEquals("initial backoff for first attempt", 1, svc.getBackoff(1));
+		assertEquals(1, svc.getBackoff(1), "initial backoff for first attempt");
 		assertEquals(2, svc.getBackoff(2));
 		assertEquals(4, svc.getBackoff(3));
 		assertEquals(8, svc.getBackoff(4));
@@ -30,13 +30,13 @@ public class ExponentialBackoffTest
 	{
 		ExponentialBackoff svc = new ExponentialBackoff(ONE_MILLISECOND, 8, Timeout.ONE_SECOND);
 
-		assertEquals("initial backoff for first attempt", 1, svc.getBackoff(1));
+		assertEquals(1, svc.getBackoff(1), "initial backoff for first attempt");
 		assertEquals(8, svc.getBackoff(2));
 		assertEquals(64, svc.getBackoff(3));
 		assertEquals(512, svc.getBackoff(4));
 
 		// Test the maximum backoff is hit
-		assertEquals("max backoff at 5th attempt", 1000, svc.getBackoff(5));
-		assertEquals("max backoff still used for subsequent attempts", 1000, svc.getBackoff(5000000));
+		assertEquals(1000, svc.getBackoff(5), "max backoff at 5th attempt");
+		assertEquals(1000, svc.getBackoff(5000000), "max backoff still used for subsequent attempts");
 	}
 }

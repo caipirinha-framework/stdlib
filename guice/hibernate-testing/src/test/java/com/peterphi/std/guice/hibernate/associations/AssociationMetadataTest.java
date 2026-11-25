@@ -23,11 +23,11 @@ import jakarta.persistence.OneToOne;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -37,21 +37,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{0}")
+@ValueSource(strings = {"HSQLDB", "PostgreSQL"})
 public class AssociationMetadataTest
 {
-	@Parameterized.Parameters(name = "{0}")
-	public static List<String> databases()
-	{
-		return List.of("HSQLDB", "PostgreSQL");
-	}
-
 	private final String database;
 	private EmbeddedPostgres postgres;
 	private final List<String> statements = new ArrayList<>();
@@ -61,14 +56,14 @@ public class AssociationMetadataTest
 		this.database = database;
 	}
 
-	@Before
+	@BeforeEach
 	public void startDatabase() throws Exception
 	{
 		if (database.equals("PostgreSQL"))
 			postgres = EmbeddedPostgres.builder().start();
 	}
 
-	@After
+	@AfterEach
 	public void stopDatabase() throws Exception
 	{
 		if (postgres != null)
@@ -116,9 +111,9 @@ public class AssociationMetadataTest
 					statements.clear();
 					JPAQueryBuilder<Owner, Long> query = new JPAQueryBuilder<>(session, ownerSchema, false);
 					query.forWebQuery(new WebQuery().eq(path, 42).orderAsc(path));
-					assertEquals(path, List.of(1L), query.selectIDs());
-					assertTrue("Foreign-key shortcut must not add joins: " + statements,
-					           statements.stream().noneMatch(sql -> sql.toLowerCase().contains(" join ")));
+					assertEquals(List.of(1L), query.selectIDs(), path);
+					assertTrue(statements.stream().noneMatch(sql -> sql.toLowerCase().contains(" join ")),
+					           "Foreign-key shortcut must not add joins: " + statements);
 				}
 				JPAQueryBuilder<Owner, Long> invalid = new JPAQueryBuilder<>(session, ownerSchema, false);
 				assertThrows(InvalidPropertyException.class, () -> invalid.forWebQuery(new WebQuery().eq("targets:id", 42)));
@@ -242,15 +237,15 @@ public class AssociationMetadataTest
 				{
 					JPAQueryBuilder<SizeOwner, Long> query = new JPAQueryBuilder<>(session, owner, false);
 					query.forWebQuery(new WebQuery().eq(path, 1).orderAsc("id"));
-					assertEquals(path, List.of(1L), query.selectIDs());
+					assertEquals(List.of(1L), query.selectIDs(), path);
 					query.forWebQuery(new WebQuery().eq(path, 0).orderAsc("id"));
-					assertEquals(path, List.of(2L, 3L), query.selectIDs());
+					assertEquals(List.of(2L, 3L), query.selectIDs(), path);
 				}
 				for (String path : List.of("target.name", "target:name"))
 				{
 					JPAQueryBuilder<SizeOwner, Long> query = new JPAQueryBuilder<>(session, owner, false);
 					query.forWebQuery(new WebQuery().isNull(path).orderAsc("id"));
-					assertEquals(path, List.of(3L), query.selectIDs());
+					assertEquals(List.of(3L), query.selectIDs(), path);
 				}
 				JPAQueryBuilder<SizeOwner, Long> denied = new JPAQueryBuilder<>(session, owner, false);
 				assertThrows(PrivatePropertyUseRejected.class, () -> denied.forWebQuery(new WebQuery().eq("target:secret:size", 0)));
@@ -278,7 +273,7 @@ public class AssociationMetadataTest
 				{
 					JPAQueryBuilder<InverseParent, Long> query = new JPAQueryBuilder<>(session, parent, false);
 					query.forWebQuery(new WebQuery().isNull(path));
-					assertEquals(path, List.of(2L), query.selectIDs());
+					assertEquals(List.of(2L), query.selectIDs(), path);
 				}
 			}
 		}
@@ -294,13 +289,13 @@ public class AssociationMetadataTest
 			var sibling = schemas.get(PrivacySibling.class);
 			for (String path : List.of("secret", "info:value"))
 			{
-				assertThrows(path, PrivatePropertyUseRejected.class, () -> base.getProperty(path, false));
+				assertThrows(PrivatePropertyUseRejected.class, () -> base.getProperty(path, false), path);
 				assertFalse(sibling.getProperty(path, false).isSchemaPrivate());
 			}
 			for (String path : List.of("peer", "info:target"))
-				assertThrows(path, PrivatePropertyUseRejected.class, () -> base.getRelation(path, false));
+				assertThrows(PrivatePropertyUseRejected.class, () -> base.getRelation(path, false), path);
 			for (String path : List.of("peer", "tags", "info.target", "info:value"))
-				assertThrows(path, PrivatePropertyUseRejected.class, () -> base.resolveFetchPath(path, false));
+				assertThrows(PrivatePropertyUseRejected.class, () -> base.resolveFetchPath(path, false), path);
 			assertFalse(base.encode().properties.stream().anyMatch(property -> property.name.equals("secret") || property.name.equals("peer") || property.name.startsWith("info:")));
 			assertTrue(sibling.encode().properties.stream().anyMatch(property -> property.name.equals("secret")));
 			factory.inTransaction(session -> {
@@ -316,22 +311,22 @@ public class AssociationMetadataTest
 				for (String path : List.of("secret", "info:value", "peer:id"))
 				{
 					JPAQueryBuilder<PrivacyBase, Long> query = new JPAQueryBuilder<>(session, base, false);
-					assertThrows(path, PrivatePropertyUseRejected.class, () -> query.forWebQuery(new WebQuery().isNull(path)));
-					assertThrows(path, PrivatePropertyUseRejected.class, () -> query.forWebQuery(new WebQuery().orderAsc(path)));
+					assertThrows(PrivatePropertyUseRejected.class, () -> query.forWebQuery(new WebQuery().isNull(path)), path);
+					assertThrows(PrivatePropertyUseRejected.class, () -> query.forWebQuery(new WebQuery().orderAsc(path)), path);
 					query.forWebQuery(new WebQuery());
-					assertThrows(path, PrivatePropertyUseRejected.class, () -> query.selectCustomProjection(false, path));
+					assertThrows(PrivatePropertyUseRejected.class, () -> query.selectCustomProjection(false, path), path);
 				}
 				for (String path : List.of("target.secret", "target:secret", "target.peer:id", "target.info:value"))
 				{
 					JPAQueryBuilder<PrivacyHolder, Long> query = new JPAQueryBuilder<>(session, schemas.get(PrivacyHolder.class), false);
-					assertThrows(path, PrivatePropertyUseRejected.class, () -> query.forWebQuery(new WebQuery().isNull(path)));
+					assertThrows(PrivatePropertyUseRejected.class, () -> query.forWebQuery(new WebQuery().isNull(path)), path);
 					query.forWebQuery(new WebQuery());
-					assertThrows(path, PrivatePropertyUseRejected.class, () -> query.selectCustomProjection(false, path));
+					assertThrows(PrivatePropertyUseRejected.class, () -> query.selectCustomProjection(false, path), path);
 				}
 				for (String path : List.of("peer", "tags", "info.target"))
 				{
 					JPAQueryBuilder<PrivacyBase, Long> query = new JPAQueryBuilder<>(session, base, false);
-					assertThrows(path, PrivatePropertyUseRejected.class, () -> query.forWebQuery(new WebQuery().dbfetch(path)));
+					assertThrows(PrivatePropertyUseRejected.class, () -> query.forWebQuery(new WebQuery().dbfetch(path)), path);
 				}
 				JPAQueryBuilder<PrivacyHolder, Long> holderFetch = new JPAQueryBuilder<>(session, schemas.get(PrivacyHolder.class), false);
 				assertThrows(PrivatePropertyUseRejected.class, () -> holderFetch.forWebQuery(new WebQuery().dbfetch("target.peer")));

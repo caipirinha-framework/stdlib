@@ -6,7 +6,7 @@ import org.custommonkey.xmlunit.Diff;
 import org.custommonkey.xmlunit.XMLUnit;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
-import org.junit.ComparisonFailure;
+import org.opentest4j.AssertionFailedError;
 import org.w3c.dom.Document;
 
 import java.util.Set;
@@ -32,7 +32,7 @@ public class XMLDiffHelper
 		Diff diff = doXmlDiff(expected, actual, attributesToRemove, elementsToRemove);
 
 		if (!diff.similar())
-			throw new ComparisonFailure(diff.toString(), pretty(expected), pretty(actual));
+			throw new AssertionFailedError(diff.toString(), pretty(expected), pretty(actual));
 	}
 
 

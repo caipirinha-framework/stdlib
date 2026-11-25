@@ -55,11 +55,6 @@
 
 		<!-- Testing -->
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>com.peterphi.std.guice</groupId>
 			<artifactId>stdlib-guice-hibernate-testing</artifactId>
 			<version>${project.version}</version>

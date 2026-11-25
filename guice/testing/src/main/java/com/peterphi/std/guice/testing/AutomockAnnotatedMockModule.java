@@ -5,7 +5,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.internal.Annotations;
 import com.google.inject.internal.Errors;
 import com.google.inject.internal.ErrorsException;
-import org.junit.runners.model.FrameworkField;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -17,10 +16,10 @@ import java.util.List;
 class AutomockAnnotatedMockModule extends AbstractTestModule
 {
 	private final Class<?> testClass;
-	private final List<FrameworkField> fields;
+	private final List<Field> fields;
 
 
-	public AutomockAnnotatedMockModule(final Class<?> testClass, final List<FrameworkField> fields)
+	public AutomockAnnotatedMockModule(final Class<?> testClass, final List<Field> fields)
 	{
 		this.testClass = testClass;
 		this.fields = fields;
@@ -32,14 +31,13 @@ class AutomockAnnotatedMockModule extends AbstractTestModule
 	{
 		final Errors errors = new Errors(testClass);
 
-		for (FrameworkField field : fields)
+		for (Field field : fields)
 		{
 			try
 			{
-				final Field f = field.getField();
-				final Key key = Annotations.getKey(TypeLiteral.get(f.getGenericType()), f, field.getAnnotations(), errors);
+				final Key key = Annotations.getKey(TypeLiteral.get(field.getGenericType()), field, field.getAnnotations(), errors);
 
-				bindMock(key, f.getType(), "Automock[" + field.getName() + "] " + key);
+				bindMock(key, field.getType(), "Automock[" + field.getName() + "] " + key);
 			}
 			catch (ErrorsException e)
 			{

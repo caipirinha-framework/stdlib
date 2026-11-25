@@ -7,12 +7,12 @@ import com.google.inject.name.Named;
 import com.peterphi.std.guice.common.serviceprops.ServicePropertiesModule;
 import com.peterphi.std.io.PropertyFile;
 import com.peterphi.std.threading.Timeout;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class TimeoutConverterTest
 {

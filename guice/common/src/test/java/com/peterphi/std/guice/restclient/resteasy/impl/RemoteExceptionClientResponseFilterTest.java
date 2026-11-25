@@ -3,14 +3,14 @@ package com.peterphi.std.guice.restclient.resteasy.impl;
 import com.peterphi.std.guice.restclient.jaxb.RestFailure;
 import com.peterphi.std.util.jaxb.JAXBSerialiser;
 import com.peterphi.std.util.jaxb.JAXBSerialiserFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RemoteExceptionClientResponseFilterTest
 {

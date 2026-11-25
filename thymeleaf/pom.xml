@@ -51,11 +51,6 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>com.peterphi.std</groupId>
 			<artifactId>stdlib-ognl</artifactId>
 			<version>${ognl.version}</version>
@@ -99,16 +94,6 @@
 			<artifactId>jakarta.servlet-api</artifactId>
 			<scope>provided</scope>
 		</dependency>
-
-		<!--
-		<dependency>
-			<groupId>org.junit</groupId>
-			<artifactId>junit-bom</artifactId>
-			<version>${junit.version}</version>
-			<type>pom</type>
-			<scope>import</scope>
-		</dependency>
-		-->
 	</dependencies>
 
 </project>

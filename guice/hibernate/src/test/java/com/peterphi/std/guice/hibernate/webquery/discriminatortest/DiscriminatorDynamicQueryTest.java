@@ -4,17 +4,16 @@ import com.google.inject.Inject;
 import com.peterphi.std.guice.hibernate.dao.HibernateDao;
 import com.peterphi.std.guice.hibernate.webquery.ConstrainedResultSet;
 import com.peterphi.std.guice.restclient.jaxb.webquery.WebQuery;
-import com.peterphi.std.guice.testing.GuiceUnit;
+import com.peterphi.std.guice.testing.GuiceTest;
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.GuiceConfig;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@RunWith(GuiceUnit.class)
+@GuiceTest
 @GuiceConfig(config = "hibernate-tests-in-memory-hsqldb.properties", classPackages = MyBaseObject.class)
 public class DiscriminatorDynamicQueryTest
 {
@@ -54,8 +53,8 @@ public class DiscriminatorDynamicQueryTest
 
 		final List<MyBaseObject> results = dao.findByUriQuery(new WebQuery().subclass("one").eq("someId", a.someId)).getList();
 
-		assertEquals("should match exactly 1 entity", 1, results.size());
-		assertEquals("should match the first child object stored", a.id, results.get(0).id);
+		assertEquals(1, results.size(), "should match exactly 1 entity");
+		assertEquals(a.id, results.get(0).id, "should match the first child object stored");
 	}
 
 
@@ -76,7 +75,7 @@ public class DiscriminatorDynamicQueryTest
 					                                                                    String.valueOf(b.id))
 					                                                                .subclass("one"));
 
-			assertEquals("discriminator should match exactly one entity", 1, results.getList().size());
+			assertEquals(1, results.getList().size(), "discriminator should match exactly one entity");
 			assertEquals(a.id, results.getList().get(0).id);
 		}
 	}

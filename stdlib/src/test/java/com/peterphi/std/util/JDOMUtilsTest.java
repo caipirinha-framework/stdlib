@@ -2,9 +2,9 @@ package com.peterphi.std.util;
 
 import org.jdom2.Element;
 import org.jdom2.JDOMConstants;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class JDOMUtilsTest
 {
@@ -26,7 +26,7 @@ public class JDOMUtilsTest
 
 		final String namespace = element.getAttributeNode("xmlns:test").getNamespaceURI();
 
-		assertEquals("DocumentBuilder output", JDOMConstants.NS_URI_XMLNS, namespace);
+		assertEquals(JDOMConstants.NS_URI_XMLNS, namespace, "DocumentBuilder output");
 	}
 
 
@@ -42,7 +42,7 @@ public class JDOMUtilsTest
 
 		final String namespace = element.getAttributeNode("xmlns:test").getNamespaceURI();
 
-		assertEquals("SAXBuilder->DOMOutputter output", JDOMConstants.NS_URI_XMLNS, namespace);
+		assertEquals(JDOMConstants.NS_URI_XMLNS, namespace, "SAXBuilder->DOMOutputter output");
 	}
 
 
@@ -59,7 +59,7 @@ public class JDOMUtilsTest
 
 		final String namespace = element.getAttributeNode("xmlns:test").getNamespaceURI();
 
-		assertEquals("DocumentBuilder->DOMBuilder->DOMOutputter output", JDOMConstants.NS_URI_XMLNS, namespace);
+		assertEquals(JDOMConstants.NS_URI_XMLNS, namespace, "DocumentBuilder->DOMBuilder->DOMOutputter output");
 	}
 
 

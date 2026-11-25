@@ -2,10 +2,9 @@ package com.peterphi.std.guice.hibernate.module;
 
 import com.google.inject.Inject;
 import com.peterphi.std.guice.database.annotation.Transactional;
-import com.peterphi.std.guice.testing.GuiceUnit;
+import com.peterphi.std.guice.testing.GuiceTest;
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.GuiceConfig;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -13,9 +12,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@RunWith(GuiceUnit.class)
+@GuiceTest
 @GuiceConfig(config = "hibernate-tests-in-memory-hsqldb.properties",
 		            classPackages = TransactionHelperTest.class)
 public class TransactionHelperTest
@@ -41,33 +41,23 @@ public class TransactionHelperTest
 	}
 
 
-	@Test(expected = KillTransaction.class)
+	@Test
 	public void testRollbackActionRuns()
 	{
-		try
-		{
-			assertEquals(0, commits.get());
-			assertEquals(0, rollbacks.get());
+		assertEquals(0, commits.get());
+		assertEquals(0, rollbacks.get());
 
-			// Execute TX without failing
-			doTransaction(true);
-		}
-		catch (KillTransaction e)
-		{
-			// Should increment rollback counter
-			assertEquals(0, commits.get());
-			assertEquals(1, rollbacks.get());
+		assertThrows(KillTransaction.class, () -> doTransaction(true));
 
-			// Re-throw to allow the test to pass
-			throw e;
-		}
+		assertEquals(0, commits.get());
+		assertEquals(1, rollbacks.get());
 	}
 
 
-	@Test(expected = IllegalStateException.class)
+	@Test
 	public void testAddCommitActionWithNoTransactionFails()
 	{
-		txutils.addCommitAction(() -> commits.incrementAndGet());
+		assertThrows(IllegalStateException.class, () -> txutils.addCommitAction(commits::incrementAndGet));
 	}
 
 

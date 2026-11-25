@@ -3,11 +3,11 @@ package com.peterphi.std.guice.hibernate;
 import com.peterphi.std.guice.common.ognl.OgnlEvaluator;
 import org.hibernate.collection.spi.PersistentMap;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 

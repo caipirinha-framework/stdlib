@@ -4,12 +4,13 @@ import com.peterphi.std.util.DOMUtils;
 import com.peterphi.std.util.jaxb.exception.SchemaValidationException;
 import com.peterphi.std.util.jaxb.pkg1.SomeXml;
 import com.peterphi.std.util.jaxb.type.MultiXSDSchemaFiles;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Test MultiXSDGenerator and MultiXSDValidator
@@ -44,10 +45,10 @@ public class MultiXSDGeneratorAndValidatorTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(expected = SchemaValidationException.class)
+	@Test
 	public void testMultiXSDWithStrictConstraints() throws Exception
 	{
-		generateSchemaAndValidate(false);
+		assertThrows(SchemaValidationException.class, () -> generateSchemaAndValidate(false));
 	}
 
 

@@ -43,12 +43,5 @@
 			<artifactId>metrics-json</artifactId>
 			<version>${metrics.version}</version>
 		</dependency>
-
-		<!-- metrics -->
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 </project>

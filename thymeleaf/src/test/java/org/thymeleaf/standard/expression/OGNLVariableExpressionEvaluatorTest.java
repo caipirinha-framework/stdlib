@@ -21,11 +21,14 @@ package org.thymeleaf.standard.expression;
 
 import java.util.Locale;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.templateresolver.StringTemplateResolver;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class OGNLVariableExpressionEvaluatorTest {
 
@@ -56,20 +59,20 @@ public class OGNLVariableExpressionEvaluatorTest {
 
     @Test
     public void testSafeNavigation() {
-        Assert.assertEquals("<p>item</p>", process("<p th:text=\"${item?.name}\">..</p>"));
-        Assert.assertEquals("<p></p>", process("<p th:text=\"${item.child?.name}\">..</p>"));
-        Assert.assertEquals("<p></p>", process("<p th:text=\"${nonexistent?.name}\">..</p>"));
+        assertEquals("<p>item</p>", process("<p th:text=\"${item?.name}\">..</p>"));
+        assertEquals("<p></p>", process("<p th:text=\"${item.child?.name}\">..</p>"));
+        assertEquals("<p></p>", process("<p th:text=\"${nonexistent?.name}\">..</p>"));
     }
 
 
     @Test
     public void testExpressionObjectsAndLocalVariables() {
-        Assert.assertEquals("<p>ABC</p>", process("<p th:text=\"${#strings.toUpperCase('abc')}\">..</p>"));
-        Assert.assertEquals("<p>6</p>", process("<p th:text=\"${#x = 5, #x + 1}\">..</p>"));
+        assertEquals("<p>ABC</p>", process("<p th:text=\"${#strings.toUpperCase('abc')}\">..</p>"));
+        assertEquals("<p>6</p>", process("<p th:text=\"${#x = 5, #x + 1}\">..</p>"));
         // Expression objects cannot be replaced from expressions
-        final Exception e = Assert.assertThrows(Exception.class,
+        final Exception e = assertThrows(Exception.class,
                 () -> process("<p th:text=\"${#strings = 'x', #strings}\">..</p>"));
-        Assert.assertTrue(String.valueOf(rootMessage(e)).contains("key matches the name of one of the expression objects"));
+        assertTrue(String.valueOf(rootMessage(e)).contains("key matches the name of one of the expression objects"));
     }
 
 

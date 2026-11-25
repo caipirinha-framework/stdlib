@@ -26,7 +26,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
@@ -34,10 +34,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MetadataResolutionTest
 {
@@ -89,7 +89,7 @@ public class MetadataResolutionTest
 			var entity = schemas.get(EmbeddedOwner.class);
 			assertEquals(State.class, entity.getProperty("first:state", false).getClazz());
 			assertEquals(Mode.class, entity.getProperty("second:state", false).getClazz());
-			assertFalse("Two embedded states must not silently overwrite a flattened alias", entity.hasProperty("state"));
+			assertFalse(entity.hasProperty("state"), "Two embedded states must not silently overwrite a flattened alias");
 			assertEquals(2, entity.encode().properties.stream().filter(property -> property.name.endsWith(":state")).count());
 			try (Session session = factory.openSession())
 			{

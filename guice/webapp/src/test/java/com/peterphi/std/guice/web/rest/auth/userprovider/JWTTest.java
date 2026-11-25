@@ -6,11 +6,12 @@ import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
 import org.jose4j.jwx.HeaderParameterNames;
 import org.jose4j.keys.HmacKey;
 import org.jose4j.lang.JoseException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JWTTest
 {
@@ -40,14 +41,14 @@ public class JWTTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(expected = RuntimeException.class)
+	@Test
 	public void verifyInvalidJWTSignatureFails() throws InvalidJwtSignatureException
 	{
 		final String expected = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ4IjoieSJ9.J7n6L4WPK24Eyz5r9RZSYX0soR1o20_rIvNjcZBVh7r";
 		// Now verify that the JWT is valid
 		JWTVerifier verifier = new JWTVerifier("secret", null, null);
 
-		verifier.verify(expected);
+		assertThrows(RuntimeException.class, () -> verifier.verify(expected));
 	}
 
 

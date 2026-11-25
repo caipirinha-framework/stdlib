@@ -1,6 +1,6 @@
 package org.thymeleaf.standard.expression;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.exceptions.TemplateProcessingException;
@@ -8,7 +8,8 @@ import org.thymeleaf.templateresolver.StringTemplateResolver;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class OGNLIntegrationTest {
     private final TemplateEngine engine = createEngine();
@@ -35,16 +36,16 @@ public class OGNLIntegrationTest {
                 "<p th:utext=\"${#strings.toUpperCase(name)}\">placeholder</p>", context));
     }
 
-    @Test(expected = TemplateProcessingException.class)
+    @Test
     public void rejectsRestrictedExpressionObjects() {
-        engine.process("<p th:utext=\"${#ctx.getVariable('name')}\"></p>", new Context());
+        assertThrows(TemplateProcessingException.class, () -> engine.process("<p th:utext=\"${#ctx.getVariable('name')}\"></p>", new Context()));
     }
 
-    @Test(expected = TemplateProcessingException.class)
+    @Test
     public void rejectsRestrictedRequestParameters() {
         Context context = new Context();
         context.setVariable("param", "secret");
-        engine.process("<p th:utext=\"${param.toString()}\"></p>", context);
+        assertThrows(TemplateProcessingException.class, () -> engine.process("<p th:utext=\"${param.toString()}\"></p>", context));
     }
 
     @Test
@@ -52,8 +53,8 @@ public class OGNLIntegrationTest {
         Context context = new Context();
         context.setVariable("name", "alice");
         for (String expression : List.of("#ctx.getVariable('name')", "#vars.getVariable('name')", "#root.name", "#this.name")) {
-            assertEquals(expression, "<p>alice</p>", engine.process(
-                    "<p th:text=\"${" + expression + "}\"></p>", context));
+            assertEquals("<p>alice</p>", engine.process(
+                    "<p th:text=\"${" + expression + "}\"></p>", context), expression);
         }
     }
 
@@ -76,13 +77,13 @@ public class OGNLIntegrationTest {
         }
     }
 
-    @Test(expected = TemplateProcessingException.class)
+    @Test
     public void rejectsReplacingExpressionObjects() {
-        engine.process("<p th:text=\"${#strings='replacement'}\"></p>", new Context());
+        assertThrows(TemplateProcessingException.class, () -> engine.process("<p th:text=\"${#strings='replacement'}\"></p>", new Context()));
     }
 
-    @Test(expected = TemplateProcessingException.class)
+    @Test
     public void rejectsForbiddenClasses() {
-        engine.process("<p th:text=\"${@java.lang.Runtime@getRuntime()}\"></p>", new Context());
+        assertThrows(TemplateProcessingException.class, () -> engine.process("<p th:text=\"${@java.lang.Runtime@getRuntime()}\"></p>", new Context()));
     }
 }

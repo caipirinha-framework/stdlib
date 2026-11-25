@@ -2,15 +2,16 @@ package com.peterphi.std.util.jaxb;
 
 import com.peterphi.std.util.DOMUtils;
 import com.peterphi.std.util.jaxb.pkg2.SomeOtherXml;
-import org.junit.ComparisonFailure;
-import org.junit.Test;
+import org.opentest4j.AssertionFailedError;
+import org.junit.jupiter.api.Test;
 
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamWriter;
 import java.io.StringWriter;
 import java.util.Objects;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * This appears to be a bug in recent versions of EclipseLink MOXy whereby if an XmlAnyElement has no namespace then a duplicate
@@ -24,7 +25,7 @@ public class MoxyXMLStreamWriterAnyElementBugTest
 	                                           "</someOtherXml>";
 
 
-	@Test(expected = ComparisonFailure.class)
+	@Test
 	public void demoBug() throws Exception
 	{
 		SomeOtherXml el = new SomeOtherXml();
@@ -36,7 +37,7 @@ public class MoxyXMLStreamWriterAnyElementBugTest
 				.serialiseWithDirectWriter(el, XMLOutputFactory.newInstance().createXMLStreamWriter(sw));
 
 		// Assert what we *SHOULD* see, which is not what we DO see
-		assertEquals(EXPECTED_OUT, sw.toString());
+		assertThrows(AssertionFailedError.class, () -> assertEquals(EXPECTED_OUT, sw.toString()));
 	}
 
 

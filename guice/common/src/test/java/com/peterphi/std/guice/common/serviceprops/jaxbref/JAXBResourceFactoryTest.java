@@ -3,10 +3,11 @@ package com.peterphi.std.guice.common.serviceprops.jaxbref;
 import com.peterphi.std.guice.common.serviceprops.composite.GuiceConfig;
 import com.peterphi.std.util.jaxb.JAXBSerialiserFactory;
 import com.peterphi.std.util.jaxb.exception.JAXBRuntimeException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JAXBResourceFactoryTest
 {
@@ -41,7 +42,7 @@ public class JAXBResourceFactoryTest
 		final MyType b = factory.get(MyType.class, "some.xml");
 
 		assertEquals(expected, a);
-		assertSame("cache should return same JAXB object ref when XML has not changed", a, b);
+		assertSame(a, b, "cache should return same JAXB object ref when XML has not changed");
 	}
 
 
@@ -129,7 +130,7 @@ public class JAXBResourceFactoryTest
 	 *
 	 * @throws Exception
 	 */
-	@Test(expected = JAXBRuntimeException.class)
+	@Test
 	public void testCorruptResource() throws Exception
 	{
 		GuiceConfig config = new GuiceConfig();
@@ -137,6 +138,6 @@ public class JAXBResourceFactoryTest
 
 		JAXBResourceFactory factory = new JAXBResourceFactory(config, SERIALISER_FACTORY);
 
-		factory.get(MyType.class, "some.xml");
+		assertThrows(JAXBRuntimeException.class, () -> factory.get(MyType.class, "some.xml"));
 	}
 }

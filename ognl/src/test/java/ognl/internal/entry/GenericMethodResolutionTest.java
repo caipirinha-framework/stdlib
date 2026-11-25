@@ -4,14 +4,14 @@ import ognl.AbstractMemberAccess;
 import ognl.Ognl;
 import ognl.OgnlContext;
 import ognl.OgnlRuntime;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GenericMethodResolutionTest
 {

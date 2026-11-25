@@ -12,10 +12,13 @@ import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.TestConfig;
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.TestModule;
 import com.peterphi.std.io.PropertyFile;
-import org.junit.runners.model.FrameworkField;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.TestClass;
+import org.junit.platform.commons.support.AnnotationSupport;
+import org.junit.platform.commons.support.ReflectionSupport;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -23,21 +26,16 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import static org.junit.platform.commons.support.HierarchyTraversalMode.BOTTOM_UP;
+
 class GuiceRegistryBuilder
 {
-	public static GuiceRegistry createRegistry(TestClass clazz)
+	public static GuiceRegistry createRegistry(Class<?> clazz)
 	{
-		final GuiceConfig config = getGuiceConfig(clazz);
-
+		final GuiceConfig config = clazz.getAnnotation(GuiceConfig.class);
 		if (config != null && config.setup().length > 1)
 			throw new IllegalArgumentException("May only have a maximum of 1 setup class for @GuiceConfig annotation!");
 
-		return createRegistry(config, clazz);
-	}
-
-
-	private static GuiceRegistry createRegistry(GuiceConfig config, TestClass clazz)
-	{
 		GuiceRegistry registry = new GuiceRegistry();
 
 		ClassScannerFactory scanner = null;
@@ -50,7 +48,7 @@ class GuiceRegistryBuilder
 
 				packages.addAll(Arrays.asList(config.packages()));
 
-				for (Class c : config.classPackages())
+				for (Class<?> c : config.classPackages())
 					packages.add(c.getPackage().getName());
 
 				scanner = new ClassScannerFactory(packages.toArray(new String[0]));
@@ -64,7 +62,7 @@ class GuiceRegistryBuilder
 				{
 					try
 					{
-						instances.add(role.newInstance());
+						instances.add(role.getDeclaredConstructor().newInstance());
 					}
 					catch (Exception e)
 					{
@@ -92,33 +90,34 @@ class GuiceRegistryBuilder
 		if (roles != null)
 			builder.withRole(roles);
 
-		// Add local method config sources
+		for (Method method : findProviders(clazz, TestConfig.class, Properties.class, PropertyFile.class))
 		{
-			validateGuiceTestConfigMethods(clazz);
-
-			for (Object src : clazz.getAnnotatedMethodValues(null, TestConfig.class, Object.class))
-			{
-				if (src instanceof Properties)
-					builder.withConfig((Properties) src);
-				else if (src instanceof PropertyFile)
-					builder.withConfig((PropertyFile) src);
-			}
+			final Object source = ReflectionSupport.invokeMethod(method, null);
+			if (source instanceof Properties properties)
+				builder.withConfig(properties);
+			else if (source instanceof PropertyFile file)
+				builder.withConfig(file);
 		}
 
-		// Add local method module sources
+		final List<Module> modules = new ArrayList<>();
+		for (Method method : findProviders(clazz, TestModule.class, Module.class))
 		{
-			validateGuiceTestModuleMethods(clazz);
+			final Module module = (Module) ReflectionSupport.invokeMethod(method, null);
+			if (module == null)
+				throw new IllegalArgumentException("Test module provider returned null: " + method);
 
-			builder.withRole(new ModuleAddingGuiceRole(clazz.getAnnotatedMethodValues(null, TestModule.class, Module.class)));
+			modules.add(module);
 		}
+		builder.withRole(new ModuleAddingGuiceRole(modules));
 
-		// Auto-detect @Automock annotated fields in the test and create mocks for them
-		{
-			List<FrameworkField> fields = clazz.getAnnotatedFields(Automock.class);
-
-			if (fields.size() > 0)
-				builder.withRole(new ModuleAddingGuiceRole(new AutomockAnnotatedMockModule(clazz.getJavaClass(), fields)));
-		}
+		final Set<String> fieldNames = new HashSet<>();
+		final List<Field> fields = AnnotationSupport.findAnnotatedFields(clazz, Automock.class,
+		                                                                field -> !field.getDeclaringClass().isInterface(),
+		                                                                BOTTOM_UP).stream()
+		                                           .filter(field -> fieldNames.add(field.getName()))
+		                                           .toList();
+		if (!fields.isEmpty())
+			builder.withRole(new ModuleAddingGuiceRole(new AutomockAnnotatedMockModule(clazz, fields)));
 
 		// Make sure we set the unit test property so roles are aware they're running in a unit test (e.g. so they don't auto-register REST services)
 		{
@@ -141,57 +140,26 @@ class GuiceRegistryBuilder
 	}
 
 
-	private static void validateGuiceTestConfigMethods(final TestClass clazz)
+	private static List<Method> findProviders(final Class<?> clazz, final Class<? extends Annotation> annotation,
+	                                          final Class<?>... returnTypes)
 	{
-		List<Class<?>> classes = Arrays.asList(Properties.class, PropertyFile.class);
+		// The nearest annotated declaration wins when a superclass provider is hidden.
+		final Set<String> names = new HashSet<>();
+		final List<Method> methods = AnnotationSupport.findAnnotatedMethods(clazz, annotation, BOTTOM_UP).stream()
+		                                             .filter(method -> !method.getDeclaringClass().isInterface())
+		                                             .filter(method -> method.getParameterCount() != 0 || names.add(method.getName()))
+		                                             .toList();
 
-		// Add local method config sources:
-		for (FrameworkMethod method : clazz.getAnnotatedMethods(TestConfig.class))
+		final List<Class<?>> allowedReturnTypes = Arrays.asList(returnTypes);
+		for (Method method : methods)
 		{
-			try
-			{
-				if (!method.isStatic())
-					throw new IllegalArgumentException("Method must be static!");
+			if (!Modifier.isStatic(method.getModifiers()) || method.getParameterCount() != 0)
+				throw new IllegalArgumentException("Test provider must be a static no-argument method: " + method);
 
-				if (!classes.contains(method.getReturnType()))
-					throw new IllegalArgumentException("Method must return one of " + classes);
-			}
-			catch (Throwable t)
-			{
-				throw new RuntimeException("Error in @GuiceTestConfig annotated method " +
-				                           method.getMethod() +
-				                           " in test " +
-				                           clazz.getJavaClass(), t);
-			}
+			if (!allowedReturnTypes.contains(method.getReturnType()))
+				throw new IllegalArgumentException("Test provider " + method + " must return one of " + allowedReturnTypes);
 		}
-	}
 
-
-	private static void validateGuiceTestModuleMethods(final TestClass clazz)
-	{
-		for (FrameworkMethod method : clazz.getAnnotatedMethods(TestModule.class))
-		{
-			try
-			{
-				if (!method.isStatic())
-					throw new IllegalArgumentException("Method must be static!");
-
-				if (!method.getReturnType().equals(Module.class))
-					throw new IllegalArgumentException("Method must return " + Module.class);
-			}
-			catch (Throwable t)
-			{
-				throw new RuntimeException("Error in @GuiceTestModule annotated method " +
-				                           method.getMethod() +
-				                           " in test " +
-				                           clazz.getJavaClass(), t);
-			}
-		}
-	}
-
-
-	private static GuiceConfig getGuiceConfig(TestClass clazz)
-	{
-		return clazz.getJavaClass().getAnnotation(GuiceConfig.class);
+		return methods;
 	}
 }

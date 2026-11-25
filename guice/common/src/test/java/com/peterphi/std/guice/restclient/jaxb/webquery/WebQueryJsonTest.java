@@ -3,15 +3,16 @@ package com.peterphi.std.guice.restclient.jaxb.webquery;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.peterphi.std.guice.common.jackson.JacksonFactory;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class WebQueryJsonTest
 {
@@ -30,7 +31,7 @@ public class WebQueryJsonTest
 		String json = mapper.writeValueAsString(query);
 		WebQuery decoded = mapper.readValue(json, WebQuery.class);
 
-		assertFalse("The established JSON shape has no mandatory type discriminator", json.contains("@type"));
+		assertFalse(json.contains("@type"), "The established JSON shape has no mandatory type discriminator");
 		assertEquals(query.toQueryFragment(), decoded.toQueryFragment());
 		assertEquals(3, decoded.getLimit());
 		assertEquals(2, decoded.getOffset());
@@ -121,15 +122,15 @@ public class WebQueryJsonTest
 		}
 	}
 
-	@Test(expected = JsonMappingException.class)
+	@Test
 	public void rejectsConstraintObjectsWithoutAnIdentifiableShape() throws Exception
 	{
-		mapper.readValue("{\"constraints\":{\"constraints\":[{}]}}", WebQuery.class);
+		assertThrows(JsonMappingException.class, () -> mapper.readValue("{\"constraints\":{\"constraints\":[{}]}}", WebQuery.class));
 	}
 
-	@Test(expected = JsonMappingException.class)
+	@Test
 	public void rejectsNonStringPathElements() throws Exception
 	{
-		mapper.readValue("{\"dbfetch\":[\"children\",42]}", WebQuery.class);
+		assertThrows(JsonMappingException.class, () -> mapper.readValue("{\"dbfetch\":[\"children\",42]}", WebQuery.class));
 	}
 }

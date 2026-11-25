@@ -1,19 +1,18 @@
 package com.peterphi.std.com.peterphi.std.guice.testing.annotations;
 
 import com.google.inject.Inject;
-import com.peterphi.std.guice.testing.GuiceUnit;
+import com.peterphi.std.guice.testing.GuiceTest;
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.Automock;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests the use of the {@link com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.Automock} annotation
  */
-@RunWith(GuiceUnit.class)
+@GuiceTest
 public class AutomockTest
 {
 	@Inject
@@ -21,7 +20,7 @@ public class AutomockTest
 	SomeInterface iface;
 
 
-	@Before
+	@BeforeEach
 	public void before()
 	{
 		Mockito.when(iface.whoami()).thenReturn("hello");

@@ -2,13 +2,12 @@ package com.peterphi.usermanager.db.dao;
 
 import com.google.inject.Inject;
 import com.peterphi.std.guice.hibernatetest.EmbeddedPostgresTestCase;
-import com.peterphi.std.guice.testing.GuiceUnit;
+import com.peterphi.std.guice.testing.GuiceTest;
 import com.peterphi.std.guice.testing.com.peterphi.std.guice.testing.annotations.GuiceConfig;
 import com.peterphi.usermanager.db.dao.hibernate.UserDaoImpl;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
-@RunWith(GuiceUnit.class)
+@GuiceTest
 @GuiceConfig(config = "user-manager-hsqldb-in-memory.properties", packages = {"com.peterphi"})
 public class UserManagerLiquibasePostgresTests extends EmbeddedPostgresTestCase
 {

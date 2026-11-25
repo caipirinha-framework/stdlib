@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation that describes how to customise the test environment for a test run with {@link
- * com.peterphi.std.guice.testing.GuiceUnit}
+ * com.peterphi.std.guice.testing.GuiceTest}
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

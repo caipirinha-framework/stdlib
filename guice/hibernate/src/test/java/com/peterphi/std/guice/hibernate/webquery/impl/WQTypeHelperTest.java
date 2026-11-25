@@ -2,11 +2,12 @@ package com.peterphi.std.guice.hibernate.webquery.impl;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Date;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WQTypeHelperTest
 {
@@ -61,9 +62,9 @@ public class WQTypeHelperTest
 	}
 
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testParseBooleanNonsenseFails() throws Exception
 	{
-		WQTypeHelper.parse(Boolean.class, "ajfaskjdfhakjshasjd");
+		assertThrows(IllegalArgumentException.class, () -> WQTypeHelper.parse(Boolean.class, "ajfaskjdfhakjshasjd"));
 	}
 }

@@ -1,14 +1,14 @@
 package com.peterphi.std.types;
 
-import junit.framework.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static junit.framework.Assert.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TimecodeTest
 {
@@ -84,12 +84,12 @@ public class TimecodeTest
 	}
 
 
-	@Test(expected = ResamplingException.class)
+	@Test
 	public void testResamplePrecise_Imprecise() throws Exception
 	{
 		final Timecode src = Timecode.getInstance("09:08:07:03", Timebase.HZ_50);
 
-		src.resamplePrecise(Timebase.HZ_25);
+		assertThrows(ResamplingException.class, () -> src.resamplePrecise(Timebase.HZ_25));
 	}
 
 
@@ -185,7 +185,7 @@ public class TimecodeTest
 		final Timecode add = Timecode.getInstance("00:59:59:22", Timebase.HZ_25);
 		final Timecode tc = base.add(add.getSampleCount());
 
-		Assert.assertEquals("00:29:59:02", tc.toSMPTEString());
+		assertEquals("00:29:59:02", tc.toSMPTEString());
 	}
 
 
@@ -199,7 +199,7 @@ public class TimecodeTest
 		final Timecode add = Timecode.getInstance("00:59:59:22", Timebase.HZ_25);
 		final Timecode tc = base.add(add.getSampleCount());
 
-		Assert.assertEquals("01:00:29:59:02", tc.toSMPTEString(true));
+		assertEquals("01:00:29:59:02", tc.toSMPTEString(true));
 	}
 
 
@@ -219,10 +219,10 @@ public class TimecodeTest
 	/**
 	 * Not a valid timecode representation (frame count is >= 1 second at this timebase)
 	 */
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testDenormalisedFrameField()
 	{
-		Timecode.getInstance("00:00:00:25@25"); // frames >= timebase
+		assertThrows(IllegalArgumentException.class, () -> Timecode.getInstance("00:00:00:25@25")); // frames >= timebase
 	}
 
 
@@ -275,7 +275,7 @@ public class TimecodeTest
 
 			final boolean between = tc.between(start, end);
 
-			assertTrue(smpte + " should be between " + start + " and " + end, between);
+			assertTrue(between, smpte + " should be between " + start + " and " + end);
 		}
 
 		for (String smpte : no)
@@ -284,7 +284,7 @@ public class TimecodeTest
 
 			final boolean between = tc.between(start, end);
 
-			assertFalse(smpte + " shouldn't be between " + start + " and " + end, between);
+			assertFalse(between, smpte + " shouldn't be between " + start + " and " + end);
 		}
 	}
 
@@ -339,11 +339,11 @@ public class TimecodeTest
 	{
 		final Timecode timecode = TimecodeBuilder.fromFrames(107892, Timebase.NTSC).build();
 
-		assertEquals("forwards: 107,892 frames of NTSC is 1 hour exactly", "01:00:00;00@30000:1001", timecode.toEncodedString());
-		assertEquals("backwards: one hour in NTSC is 107,892 frames", 107892, timecode.getDurationInFrames());
-		assertEquals("adding 1 NTSC frame to 1 hour in NTSC should yield 1h and 1 frame",
-		             "01:00:00;01@30000:1001",
-		             timecode.add(SampleCount.valueOf("1@NTSC")).toEncodedString());
+		assertEquals("01:00:00;00@30000:1001", timecode.toEncodedString(), "forwards: 107,892 frames of NTSC is 1 hour exactly");
+		assertEquals(107892, timecode.getDurationInFrames(), "backwards: one hour in NTSC is 107,892 frames");
+		assertEquals("01:00:00;01@30000:1001",
+		             timecode.add(SampleCount.valueOf("1@NTSC")).toEncodedString(),
+		             "adding 1 NTSC frame to 1 hour in NTSC should yield 1h and 1 frame");
 	}
 
 
@@ -354,11 +354,11 @@ public class TimecodeTest
 		Timecode firstPartOut = Timecode.valueOf("01:30:49;29@30000:1001");
 		final Timecode partOutAbsolute = firstPartOut.subtract(start.getSampleCount());
 
-		assertEquals("input","00:30:49;29@30000:1001",partOutAbsolute.toEncodedString());
-		assertEquals("input","55445@30000:1001",partOutAbsolute.getSampleCount().toString());
+		assertEquals("00:30:49;29@30000:1001",partOutAbsolute.toEncodedString(),"input");
+		assertEquals("55445@30000:1001",partOutAbsolute.getSampleCount().toString(),"input");
 
-		assertEquals("resample to 27MHz","00:30:50:450450@27000000", partOutAbsolute.resample(Timebase.HZ_27000000).toEncodedString());
-		assertEquals("resample to 27MHz","49950450450@27000000", partOutAbsolute.resample(Timebase.HZ_27000000).getSampleCount().toString());
+		assertEquals("00:30:50:450450@27000000",partOutAbsolute.resample(Timebase.HZ_27000000).toEncodedString(), "resample to 27MHz");
+		assertEquals("49950450450@27000000",partOutAbsolute.resample(Timebase.HZ_27000000).getSampleCount().toString(), "resample to 27MHz");
 	}
 
 
@@ -369,12 +369,12 @@ public class TimecodeTest
 		final SampleCount sOneHourS = SampleCount.valueOf("3600@1");
 		final SampleCount sOneHour24p = SampleCount.valueOf("86314@24000:1001");
 
-		assertEquals("1 hour of 24p should resample down to one hour in seconds", sOneHourS, sOneHour24p.resample(Timebase.HZ_1));
-		assertEquals("1 hour in seconds should resample to one hour in 24p", sOneHour24p, sOneHourS.resample(Timebase.NTSC_24));
+		assertEquals(sOneHourS, sOneHour24p.resample(Timebase.HZ_1), "1 hour of 24p should resample down to one hour in seconds");
+		assertEquals(sOneHour24p, sOneHourS.resample(Timebase.NTSC_24), "1 hour in seconds should resample to one hour in 24p");
 
 		Timecode tOneHour24p = Timecode.getInstance(sOneHour24p);
-		assertEquals("one hour of 24p in non-drop frame timecode", "00:59:56:10@24000:1001", tOneHour24p.toEncodedString());
-		assertEquals("one hour of 24p in non-drop frame timecode", "00:59:56:10@24000:1001", tOneHour24p.toEncodedString());
+		assertEquals("00:59:56:10@24000:1001", tOneHour24p.toEncodedString(), "one hour of 24p in non-drop frame timecode");
+		assertEquals("00:59:56:10@24000:1001", tOneHour24p.toEncodedString(), "one hour of 24p in non-drop frame timecode");
 	}
 
 	@Test
@@ -388,19 +388,19 @@ public class TimecodeTest
 		final Timecode timecode2 = TimecodeBuilder.fromFrames(frame2, Timebase.NTSC).build();
 
 		// Make sure this results in the timecode we expect
-		assertEquals("forward conversion (1h 1m)", "01:01:00;02@30000:1001", timecode1.toEncodedString());
-		assertEquals("forward conversion (1h 59s 29 frames)", "01:00:59;29@30000:1001", timecode2.toEncodedString());
+		assertEquals("01:01:00;02@30000:1001", timecode1.toEncodedString(), "forward conversion (1h 1m)");
+		assertEquals("01:00:59;29@30000:1001", timecode2.toEncodedString(), "forward conversion (1h 59s 29 frames)");
 
 		// Make sure the duration in frames is what we expect
-		assertEquals("backward conversion (1h 1m)", frame1, timecode1.getDurationInFrames());
-		assertEquals("backward conversion (1h 59s 29 frames)", frame2, timecode2.getDurationInFrames());
+		assertEquals(frame1, timecode1.getDurationInFrames(), "backward conversion (1h 1m)");
+		assertEquals(frame2, timecode2.getDurationInFrames(), "backward conversion (1h 59s 29 frames)");
 
-		assertEquals("backwards timecode conversion (1h 1m)", frame1, Timecode.valueOf("01:01:00;02@30000:1001").getDurationInFrames());
-		assertEquals("backwards timecode conversion (1h 59s 29 frames)", frame2, Timecode.valueOf("01:00:59;29@30000:1001").getDurationInFrames());
+		assertEquals(frame1, Timecode.valueOf("01:01:00;02@30000:1001").getDurationInFrames(), "backwards timecode conversion (1h 1m)");
+		assertEquals(frame2, Timecode.valueOf("01:00:59;29@30000:1001").getDurationInFrames(), "backwards timecode conversion (1h 59s 29 frames)");
 
 		// Make sure that adding and subtracting frames works
-		assertEquals("subtracting 1 sample", "01:00:59;29@30000:1001", timecode1.subtract(SampleCount.valueOf("1@NTSC")).toEncodedString());
-		assertEquals("adding 1 sample", "01:01:00;03@30000:1001", timecode1.add(SampleCount.valueOf("1@NTSC")).toEncodedString());
+		assertEquals("01:00:59;29@30000:1001", timecode1.subtract(SampleCount.valueOf("1@NTSC")).toEncodedString(), "subtracting 1 sample");
+		assertEquals("01:01:00;03@30000:1001", timecode1.add(SampleCount.valueOf("1@NTSC")).toEncodedString(), "adding 1 sample");
 	}
 
 
@@ -448,8 +448,8 @@ public class TimecodeTest
 		final long expected = 111884;
 		final Timecode tc = Timecode.valueOf("01:02:13;06@NTSC");
 
-		assertEquals("forward", expected, tc.getDurationInFrames());
+		assertEquals(expected, tc.getDurationInFrames(), "forward");
 		final Timecode reversed = Timecode.getInstance(expected, true, Timebase.NTSC);
-		assertEquals("backward", tc, reversed);
+		assertEquals(tc, reversed, "backward");
 	}
 }

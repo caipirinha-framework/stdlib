@@ -8,7 +8,7 @@ import com.peterphi.std.guice.restclient.jaxb.webquery.plugin.WebQueryDecodePlug
 import com.peterphi.std.guice.restclient.jaxb.webquery.plugin.WebQueryPresetPlugin;
 import org.apache.commons.lang.StringUtils;
 import org.jboss.resteasy.specimpl.ResteasyUriInfo;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import jakarta.ws.rs.core.UriBuilder;
 import java.net.URI;
@@ -17,24 +17,26 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WebQueryTest
 {
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testPluginBanning()
 	{
-		new WebQueryDecodePlugin.Builder().ban("password").build().handles("password");
+		final var plugin = new WebQueryDecodePlugin.Builder().ban("password").build();
+		assertThrows(IllegalArgumentException.class, () -> plugin.handles("password"));
 	}
 
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void testPluginValidation()
 	{
-		new WebQueryDecodePlugin.Builder()
+		final var plugin = new WebQueryDecodePlugin.Builder()
 				.validate("_fetch", s -> !StringUtils.containsIgnoreCase(s, "password"))
-				.build()
-				.handles("_fetch", Arrays.asList("id,username,password"));
+				.build();
+		assertThrows(IllegalArgumentException.class, () -> plugin.handles("_fetch", Arrays.asList("id,username,password")));
 	}
 
 
@@ -47,7 +49,7 @@ public class WebQueryTest
 
 			// If there is an inversion, the inversion of that should be this
 			if (inverted != null)
-				assertEquals("Expect inversion of " + inverted + " to be " + val, val, inverted.invert());
+				assertEquals(val, inverted.invert(), "Expect inversion of " + inverted + " to be " + val);
 		}
 	}
 

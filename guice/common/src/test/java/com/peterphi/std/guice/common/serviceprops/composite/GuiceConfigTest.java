@@ -1,10 +1,10 @@
 package com.peterphi.std.guice.common.serviceprops.composite;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Properties;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GuiceConfigTest
 {
@@ -15,12 +15,12 @@ public class GuiceConfigTest
 	public void testOverwriteValue()
 	{
 		props.set("name", "value1");
-		assertEquals("getRaw", "value1", props.getRaw("name", null));
-		assertEquals("get", "value1", props.get("name", null));
+		assertEquals("value1", props.getRaw("name", null), "getRaw");
+		assertEquals("value1", props.get("name", null), "get");
 
 		props.set("name", "value2");
-		assertEquals("getRaw", "value2", props.getRaw("name", null));
-		assertEquals("get", "value2", props.get("name", null));
+		assertEquals("value2", props.getRaw("name", null), "getRaw");
+		assertEquals("value2", props.get("name", null), "get");
 	}
 
 
@@ -28,18 +28,18 @@ public class GuiceConfigTest
 	public void testSimpleSetAndGet()
 	{
 		props.set("name", "value1");
-		assertEquals("getRaw", "value1", props.getRaw("name", null));
-		assertEquals("get", "value1", props.get("name", null));
+		assertEquals("value1", props.getRaw("name", null), "getRaw");
+		assertEquals("value1", props.get("name", null), "get");
 
 		props.setOverride("name", "value2");
-		assertEquals("getRaw", "value2", props.getRaw("name", null));
-		assertEquals("get", "value2", props.get("name", null));
+		assertEquals("value2", props.getRaw("name", null), "getRaw");
+		assertEquals("value2", props.get("name", null), "get");
 
 		props.set("name", "valueX"); // Change an underlying value - should be ignored
-		assertEquals("getRaw", "value2", props.getRaw("name", null));
-		assertEquals("get", "value2", props.get("name", null));
+		assertEquals("value2", props.getRaw("name", null), "getRaw");
+		assertEquals("value2", props.get("name", null), "get");
 
-		assertEquals("override count", 1, props.getOverrides().size());
+		assertEquals(1, props.getOverrides().size(), "override count");
 	}
 
 
@@ -48,8 +48,8 @@ public class GuiceConfigTest
 	{
 		props.set("var", "123");
 		props.set("name", "a-${var}-b");
-		assertEquals("getRaw", "a-${var}-b", props.getRaw("name", null));
-		assertEquals("get", "a-123-b", props.get("name", null));
+		assertEquals("a-${var}-b", props.getRaw("name", null), "getRaw");
+		assertEquals("a-123-b", props.get("name", null), "get");
 	}
 
 

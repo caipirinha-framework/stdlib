@@ -2,12 +2,12 @@ package com.peterphi.std.guice.common.retry.retry;
 
 import com.codahale.metrics.MetricRegistry;
 import com.peterphi.std.guice.common.retry.retry.backoff.NoBackoffStrategy;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class RetryManagerTest
 {
